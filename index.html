@@ -380,10 +380,20 @@ const RESEARCH = {
     "상대적 위치를 뜻하며, 남성 또는 여성의 절대 이용자가 더 많다는 뜻이 아닙니다.",
   // 전체 대여소를 두 집단으로 나눈 평균 비교 결과 (개별 대여소 값과 구분해 표시됩니다)
   groupFindings: {
-    summary: null,           // 예: 분석 방법·대상 대여소 수
-    source: null,
+    summary: "전체 2,766개 대여소(남성 상대 우세 1,242 · 여성 상대 우세 1,524)의 집단 평균 비교, Welch 독립표본 t검정. " +
+             "토지이용 비율은 값이 #DIV/0!인 10개 대여소를 제외(1,237 · 1,519).",
+    source: "Bike_400m_Final.ver.1.2 기준 재계산 — 논문 표와 대조 필요",
     items: [
-      // { name: "지표명", unit: "%", scope: "측정 범위", maleRelative: 0, femaleRelative: 0, statistic: "t = 0.00", pValue: "0.000", note: null }
+      { name: "주거용지 비율", unit: "%", scope: "대여소 400m 네트워크 버퍼", maleRelative: 37.7, femaleRelative: 37.4, statistic: "Welch t = 0.3", pValue: "0.765" },
+      { name: "상업용지 비율", unit: "%", scope: "대여소 400m 네트워크 버퍼", maleRelative: 24.5, femaleRelative: 18.8, statistic: "Welch t = 8.28", pValue: "< 0.001" },
+      { name: "교통용지 비율", unit: "%", scope: "대여소 400m 네트워크 버퍼", maleRelative: 21.1, femaleRelative: 22.1, statistic: "Welch t = -2.16", pValue: "0.031" },
+      { name: "녹지 비율", unit: "%", scope: "대여소 400m 네트워크 버퍼", maleRelative: 8.0, femaleRelative: 12.3, statistic: "Welch t = -8.34", pValue: "< 0.001" },
+      { name: "나대지 비율", unit: "%", scope: "대여소 400m 네트워크 버퍼", maleRelative: 2.4, femaleRelative: 2.9, statistic: "Welch t = -2.08", pValue: "0.038" },
+      { name: "음식점 수", unit: "개", scope: "대여소 400m 네트워크 버퍼", maleRelative: 269.3, femaleRelative: 198.3, statistic: "Welch t = 9.34", pValue: "< 0.001" },
+      { name: "카페 수", unit: "개", scope: "대여소 400m 네트워크 버퍼", maleRelative: 67.1, femaleRelative: 53.4, statistic: "Welch t = 6.56", pValue: "< 0.001" },
+      { name: "편의점 수", unit: "개", scope: "대여소 400m 네트워크 버퍼", maleRelative: 20.7, femaleRelative: 16.6, statistic: "Welch t = 9.86", pValue: "< 0.001" },
+      { name: "병원 수", unit: "개", scope: "대여소 400m 네트워크 버퍼", maleRelative: 41.4, femaleRelative: 33.7, statistic: "Welch t = 4.92", pValue: "< 0.001" },
+      { name: "학원 수", unit: "개", scope: "대여소 400m 네트워크 버퍼", maleRelative: 59.5, femaleRelative: 55.8, statistic: "Welch t = 1.57", pValue: "0.118" }
     ]
   }
 };
@@ -398,13 +408,23 @@ const STATIONS = [
     id: "4962",                    // 대여소 번호
     name: "고덕비즈밸리 디엠스퀘어 앞", // 대여소명
     dominance: "male_relative",    // "male_relative" | "female_relative"
-    zScoreDiff: null,              // 남성 Z − 여성 Z
+    zScoreDiff: 0.166,             // 남성 Z − 여성 Z (Z_Mcount −0.556 − ZFCount −0.722)
+    usage: { total: 5968, male: 3291, female: 940, unknownSex: 1737 },  // 대여 건수
     coord: { lat: 37.56755066, lng: 127.161026 },  // 설정 도우미의 '좌표로 파노라마 찾기'에만 사용
     researchPeriod: null,
-    source: null,
+    source: "Bike_400m_Final.ver.1.2",
     shortNote: null,               // 발표 모드 하단의 짧은 환경 설명 (측정 범위를 함께 적기)
     metrics: [
-      // { name: "지표명", value: 0, unit: "%", scope: "대여소 반경 400m 네트워크 버퍼", source: "자료 출처" }
+      { name: "주거용지 비율", value: 0.0, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "상업용지 비율", value: 40.1, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "교통용지 비율", value: 28.1, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "녹지 비율", value: 6.5, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "나대지 비율", value: 25.4, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "음식점 수", value: 47, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "카페 수", value: 24, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "편의점 수", value: 5, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "병원 수", value: 6, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "학원 수", value: 1, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" }
     ],
     vlm: {
       score: 7,
@@ -420,8 +440,34 @@ const STATIONS = [
       evaluatedPanoId: null        // VLM이 이 네이버 파노라마 자체를 평가했다면 그 ID
     },
     stops: [
-      // 설정 도우미로 확인한 지점을 여기에 붙여 넣기
-      // { panoId: "…", pov: { pan: 0, tilt: 0, fov: 90 }, title: "…", description: "…", dwellMs: 6000 },
+      {
+        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동
+        pov: { pan: 0, tilt: 0, fov: 90 },
+        title: "대여소 주변 북쪽(N) 방향",
+        description: "VLM 평가 그림의 North 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동
+        pov: { pan: 90, tilt: 0, fov: 90 },
+        title: "대여소 주변 동쪽(E) 방향",
+        description: "VLM 평가 그림의 East 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동
+        pov: { pan: 180, tilt: 0, fov: 90 },
+        title: "대여소 주변 남쪽(S) 방향",
+        description: "VLM 평가 그림의 South 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동
+        pov: { pan: -90, tilt: 0, fov: 90 },
+        title: "대여소 주변 서쪽(W) 방향",
+        description: "VLM 평가 그림의 West 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
+        dwellMs: 6000
+      }
     ]
   },
   {
@@ -431,12 +477,24 @@ const STATIONS = [
     id: "4453",
     name: "위례중앙푸르지오 201동 앞",
     dominance: "female_relative",
-    zScoreDiff: null,
+    zScoreDiff: -0.399,            // Z_Mcount 0.033 − ZFCount 0.432
+    usage: { total: 14979, male: 6620, female: 4959, unknownSex: 3400 },
     coord: { lat: 37.47434616, lng: 127.14326477 },
     researchPeriod: null,
-    source: null,
+    source: "Bike_400m_Final.ver.1.2",
     shortNote: null,
-    metrics: [],
+    metrics: [
+      { name: "주거용지 비율", value: 60.8, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "상업용지 비율", value: 8.8, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "교통용지 비율", value: 29.9, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "녹지 비율", value: 0.5, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "나대지 비율", value: 0.0, unit: "%", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "음식점 수", value: 255, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "카페 수", value: 66, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "편의점 수", value: 14, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "병원 수", value: 74, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" },
+      { name: "학원 수", value: 213, unit: "개", scope: "대여소 400m 네트워크 버퍼", source: "Bike_400m_Final.ver.1.2" }
+    ],
     vlm: {
       score: 6,
       scaleMax: 7,
@@ -451,7 +509,36 @@ const STATIONS = [
       evaluatedImageReference: "연구 그림의 4방향(North·East·South·West) 거리뷰 이미지, UNIQUE ID 4453",
       evaluatedPanoId: null
     },
-    stops: []
+    stops: [
+      {
+        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동
+        pov: { pan: 0, tilt: 0, fov: 90 },
+        title: "대여소 주변 북쪽(N) 방향",
+        description: "VLM 평가 그림의 North 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동
+        pov: { pan: 90, tilt: 0, fov: 90 },
+        title: "대여소 주변 동쪽(E) 방향",
+        description: "VLM 평가 그림의 East 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동
+        pov: { pan: 180, tilt: 0, fov: 90 },
+        title: "대여소 주변 남쪽(S) 방향",
+        description: "VLM 평가 그림의 South 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동
+        pov: { pan: -90, tilt: 0, fov: 90 },
+        title: "대여소 주변 서쪽(W) 방향",
+        description: "VLM 평가 그림의 West 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
+        dwellMs: 6000
+      }
+    ]
   }
 ];
 /* ==== STATIONS END ==== */
@@ -568,6 +655,9 @@ const STATIONS = [
       id: str(s.id), name: str(s.name), dominance, zScoreDiff: z,
       coord: { lat: num(s.coord && s.coord.lat), lng: num(s.coord && s.coord.lng) },
       researchPeriod: str(s.researchPeriod), source: str(s.source), shortNote: str(s.shortNote),
+      usage: s.usage && typeof s.usage === "object"
+        ? { total: num(s.usage.total), male: num(s.usage.male), female: num(s.usage.female), unknownSex: num(s.usage.unknownSex) }
+        : { total: null, male: null, female: null, unknownSex: null },
       metrics,
       vlm: {
         score: num(v.score), scaleMax: num(v.scaleMax), humanAuditorScore: num(v.humanAuditorScore),
@@ -1231,10 +1321,16 @@ const STATIONS = [
         ["분류", d ? d.full : miss()],
         ["분류 기준", d ? d.rule : miss()],
         ["Z점수 차", st.zScoreDiff !== null ? `${st.zScoreDiff} (남성 Z − 여성 Z)` : miss()],
+        ["대여 건수", st.usage.total !== null
+          ? `전체 ${st.usage.total.toLocaleString("ko-KR")} · 남성 ${st.usage.male !== null ? st.usage.male.toLocaleString("ko-KR") : "–"} · 여성 ${st.usage.female !== null ? st.usage.female.toLocaleString("ko-KR") : "–"}${st.usage.unknownSex !== null ? " · 성별 미상 " + st.usage.unknownSex.toLocaleString("ko-KR") : ""}`
+          : miss()],
         ["자료 기준", val(st.researchPeriod || RESEARCH.dataPeriod)],
         ["출처", val(st.source || RESEARCH.dataSource)]
       ]) : h("p", null, miss()),
-      h("div", { class: "callout", text: "‘상대 우세’는 각 성별 이용량 분포 안에서 이 대여소가 차지하는 상대적 위치입니다. 남성 또는 여성 이용자가 절대적으로 더 많다는 뜻이 아닙니다." })
+      h("div", { class: "callout", text: "‘상대 우세’는 각 성별 이용량 분포 안에서 이 대여소가 차지하는 상대적 위치입니다. 남성 또는 여성 이용자가 절대적으로 더 많다는 뜻이 아닙니다." }),
+      st && st.dominance === "female_relative" && st.usage.male !== null && st.usage.female !== null && st.usage.male > st.usage.female
+        ? h("p", { class: "note", text: "이 대여소는 남성 대여 건수가 여성보다 많지만, 각 성별 분포 안에서의 상대 위치로는 여성 상대 우세로 분류됩니다." })
+        : null
     );
 
     /* 환경지표 */
