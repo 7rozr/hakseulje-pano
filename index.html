@@ -372,7 +372,7 @@ const APP_CONFIG = {
 const RESEARCH = {
   studyTitle: "비전-언어모델(VLM)을 활용한 공유자전거 이용의 성별 격차 분석: 서울시를 중심으로",
   authors: null,             // 예: "OOO, OOO, 김지우"
-  dataPeriod: null,          // 이용자료 기준 기간
+  dataPeriod: "2025년 1~12월", // 이용자료 기준 기간
   dataSource: null,          // 이용자료 출처
   classificationMethod:
     "대여소별 남녀 이용량을 각각 Z점수로 표준화한 뒤 남성 Z점수에서 여성 Z점수를 뺀 값으로 분류했습니다. " +
@@ -441,30 +441,44 @@ const STATIONS = [
     },
     stops: [
       {
-        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동
+        panoId: "YZ6Amk7-1mvRSDy1ja8ORw",  // 촬영일 2026-07-13 09:18:58 · 고덕비즈밸리로6길
+        pov: { pan: 145.3, tilt: 0, fov: 90 },
+        title: "접근 ① 대여소까지 약 60m",
+        description: "고덕비즈밸리로6길에서 대여소 방향(남동쪽)을 바라본 시야입니다. 대여소 좌표까지 직선거리 약 60m.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "gVOmpCUffJ3Efq3FSXGm2g",  // 촬영일 2026-07-13 09:19:01 · 고덕비즈밸리로6길
+        pov: { pan: 157.0, tilt: 0, fov: 90 },
+        title: "접근 ② 대여소까지 약 31m",
+        description: "고덕비즈밸리로6길에서 대여소 방향(남동쪽)을 바라본 시야입니다. 대여소 좌표까지 직선거리 약 31m.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동 · 대여소 좌표에서 약 11m
         pov: { pan: 0, tilt: 0, fov: 90 },
-        title: "대여소 주변 북쪽(N) 방향",
+        title: "대여소 앞 · 북쪽(N) 방향",
         description: "VLM 평가 그림의 North 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
         dwellMs: 6000
       },
       {
-        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동
+        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동 · 대여소 좌표에서 약 11m
         pov: { pan: 90, tilt: 0, fov: 90 },
-        title: "대여소 주변 동쪽(E) 방향",
+        title: "대여소 앞 · 동쪽(E) 방향",
         description: "VLM 평가 그림의 East 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
         dwellMs: 6000
       },
       {
-        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동
+        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동 · 대여소 좌표에서 약 11m
         pov: { pan: 180, tilt: 0, fov: 90 },
-        title: "대여소 주변 남쪽(S) 방향",
+        title: "대여소 앞 · 남쪽(S) 방향",
         description: "VLM 평가 그림의 South 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
         dwellMs: 6000
       },
       {
-        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동
+        panoId: "Rq68tjxt1ZnkzCwJOnvY_A",  // 촬영일 2026-07-13 09:20:05 · 서울 강동구 고덕동 · 대여소 좌표에서 약 11m
         pov: { pan: -90, tilt: 0, fov: 90 },
-        title: "대여소 주변 서쪽(W) 방향",
+        title: "대여소 앞 · 서쪽(W) 방향",
         description: "VLM 평가 그림의 West 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
         dwellMs: 6000
       }
@@ -511,30 +525,44 @@ const STATIONS = [
     },
     stops: [
       {
-        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동
+        panoId: "w2ZoRM_YbJvyYc8qIbFd3g",  // 촬영일 2024-06-28 09:55:12 · 서울 송파구 장지동
+        pov: { pan: 86.7, tilt: 0, fov: 90 },
+        title: "접근 ① 대여소까지 약 60m",
+        description: "대여소 서쪽에서 대여소 방향(동쪽)을 바라본 시야입니다. 대여소 좌표까지 직선거리 약 60m.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "wph3-SYBy-05b-x7aFBc2A",  // 촬영일 2024-06-28 09:53:15 · 서울 송파구 장지동
+        pov: { pan: 80.0, tilt: 0, fov: 90 },
+        title: "접근 ② 대여소까지 약 28m",
+        description: "대여소 서쪽에서 대여소 방향(동쪽)을 바라본 시야입니다. 대여소 좌표까지 직선거리 약 28m.",
+        dwellMs: 6000
+      },
+      {
+        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동 · 대여소 좌표에서 약 7m
         pov: { pan: 0, tilt: 0, fov: 90 },
-        title: "대여소 주변 북쪽(N) 방향",
+        title: "대여소 앞 · 북쪽(N) 방향",
         description: "VLM 평가 그림의 North 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
         dwellMs: 6000
       },
       {
-        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동
+        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동 · 대여소 좌표에서 약 7m
         pov: { pan: 90, tilt: 0, fov: 90 },
-        title: "대여소 주변 동쪽(E) 방향",
+        title: "대여소 앞 · 동쪽(E) 방향",
         description: "VLM 평가 그림의 East 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
         dwellMs: 6000
       },
       {
-        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동
+        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동 · 대여소 좌표에서 약 7m
         pov: { pan: 180, tilt: 0, fov: 90 },
-        title: "대여소 주변 남쪽(S) 방향",
+        title: "대여소 앞 · 남쪽(S) 방향",
         description: "VLM 평가 그림의 South 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
         dwellMs: 6000
       },
       {
-        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동
+        panoId: "JfKDjtsbAMZfcYM4Dj5V0g",  // 촬영일 2024-06-28 09:51:34 · 서울 송파구 장지동 · 대여소 좌표에서 약 7m
         pov: { pan: -90, tilt: 0, fov: 90 },
-        title: "대여소 주변 서쪽(W) 방향",
+        title: "대여소 앞 · 서쪽(W) 방향",
         description: "VLM 평가 그림의 West 이미지와 같은 방위입니다. 평가 이미지와 촬영 시점·위치·화각은 다를 수 있습니다.",
         dwellMs: 6000
       }
