@@ -413,7 +413,7 @@ const RESEARCH = {
   studyTitle: "비전-언어모델(VLM)을 활용한 공유자전거 이용의 성별 격차 분석: 서울시를 중심으로",
   authors: null,             // 예: "OOO, OOO, 김지우"
   dataPeriod: "2025년 1~12월", // 이용자료 기준 기간
-  dataSource: null,          // 이용자료 출처
+  dataSource: "열린데이터광장 공공자전거 대여이력", // 이용자료 출처
   classificationMethod:
     "대여소별 남녀 이용량을 각각 Z점수로 표준화한 뒤 남성 Z점수에서 여성 Z점수를 뺀 값으로 분류했습니다. " +
     "양수는 남성 상대 우세, 음수는 여성 상대 우세 대여소입니다. 이는 각 성별 이용량 분포 안에서 대여소가 차지하는 " +
@@ -1732,16 +1732,6 @@ const STATIONS = [
       h("div", { class: "callout warn", text: sameImage
         ? "VLM이 평가한 파노라마와 현재 지점의 파노라마 ID가 같습니다. 다만 평가 당시의 시야 방향·화각은 지금 화면과 다를 수 있습니다."
         : "VLM이 평가한 이미지는 현재 표시 중인 네이버 파노라마와 다른 이미지입니다. 촬영 출처·시점·위치·시야가 다를 수 있으므로, 점수를 지금 화면에 대한 평가로 보지 마세요." }),
-      (() => {
-        const li = locInfo();
-        const shot = li.showLoc && li.loc.photodate ? String(li.loc.photodate) : null;
-        const shotYear = shot ? num(shot.slice(0, 4)) : null;
-        if (!v || v.photoYear === null) return null;
-        if (shotYear === null) return h("p", { class: "note", text: `VLM 평가 이미지 촬영 연도: ${v.photoYear}년` });
-        return h("p", { class: shotYear === v.photoYear ? "note" : "note bad", text: shotYear === v.photoYear
-          ? `VLM 평가 이미지(${v.photoYear}년 촬영)와 지금 파노라마(${shot.slice(0, 10)} 촬영)는 같은 해에 촬영됐습니다. 촬영 날짜·위치는 다를 수 있습니다.`
-          : `VLM 평가 이미지(${v.photoYear}년 촬영)와 지금 파노라마(${shot.slice(0, 10)} 촬영)는 촬영 시기가 다릅니다.` });
-      })(),
       h("p", { class: "note", text: "VLM 점수는 모델이 이미지에 부여한 평가이며, 실제 이용자의 선호나 객관적인 안전 수준을 나타내지 않습니다." })
     );
 
