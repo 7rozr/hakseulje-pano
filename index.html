@@ -17,6 +17,8 @@
     --navy-soft: #e8edf6;
     --teal: #0f6e66;
     --teal-soft: #e3f1ef;
+    --burgundy: #8c1d3f;
+    --burgundy-soft: #f8e9ee;
     --accent: var(--navy);
     --accent-soft: var(--navy-soft);
     --warn: #7a5200;
@@ -27,6 +29,7 @@
     --font: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   }
   body[data-accent="teal"] { --accent: var(--teal); --accent-soft: var(--teal-soft); }
+  body[data-accent="burgundy"] { --accent: var(--burgundy); --accent-soft: var(--burgundy-soft); }
 
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--ink); }
@@ -67,9 +70,10 @@
   .strip-name { font-size: 20px; font-weight: 700; }
   .strip-id { color: var(--muted); }
   .dom-badge {
-    display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
-    border: 1px solid var(--accent); color: var(--accent); background: #fff; font-size: 15px; font-weight: 600;
+    display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid var(--accent); color: #fff; background: var(--accent); font-size: 15px; font-weight: 700;
   }
+  .dom-tag { display: inline-block; padding: 0 6px; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; margin-right: 4px; }
   .strip-rule { color: var(--muted); font-size: 14px; }
 
   /* ---------- 버튼 ---------- */
@@ -273,6 +277,7 @@
       <button class="btn small" id="ptPrev">이전</button>
       <button class="btn small primary" id="ptPlay">자동 탐색 시작</button>
       <button class="btn small" id="ptNext">다음</button>
+      <button class="btn small" id="ptNextStation" hidden>다음 대여소</button>
       <button class="btn small" id="ptFull">전체 화면</button>
       <button class="btn small" id="ptExit">발표 모드 종료</button>
     </div>
@@ -315,6 +320,8 @@
           <button class="btn" id="btnPause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8 5v14M16 5v14"/></svg>일시정지</button>
           <button class="btn" id="btnNext">다음 지점<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
           <button class="btn" id="btnView"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>기본 시야로</button>
+          <button class="btn" id="btnPrevStation" hidden>이전 대여소</button>
+          <button class="btn" id="btnNextStation" hidden>다음 대여소</button>
         </div>
         <div class="ctrl-status">
           <span class="status-msg" id="statusMsg" aria-live="polite"></span>
@@ -440,7 +447,7 @@ const STATIONS = [
   {
     key: "A",
     label: "대여소 A",
-    color: "navy",                 // "navy" | "teal" — 장소 구분용 색 (성별 색 아님)
+    color: "navy",                 // "navy"(남성 상대 우세) | "burgundy"(여성 상대 우세)
     id: "4962",                    // 대여소 번호
     name: "고덕비즈밸리 디엠스퀘어 앞", // 대여소명
     dominance: "male_relative",    // "male_relative" | "female_relative"
@@ -524,7 +531,7 @@ const STATIONS = [
   {
     key: "B",
     label: "대여소 B",
-    color: "teal",
+    color: "burgundy",
     id: "4453",
     name: "위례중앙푸르지오 201동 앞",
     dominance: "female_relative",
@@ -621,7 +628,8 @@ const STATIONS = [
   };
   const PALETTE = {
     navy: { c: "#1d3a6b", soft: "#e8edf6" },
-    teal: { c: "#0f6e66", soft: "#e3f1ef" }
+    teal: { c: "#0f6e66", soft: "#e3f1ef" },
+    burgundy: { c: "#8c1d3f", soft: "#f8e9ee" }
   };
 
   /* ---------- 유틸 ---------- */
@@ -717,7 +725,7 @@ const STATIONS = [
     metrics.forEach((m, k) => { if (!has(m.scope)) warnings.push(`${label} 환경지표 ${k + 1}(${m.name || "이름 없음"}): 측정 범위(scope) 미입력`); });
     return {
       key, label,
-      color: PALETTE[s.color] ? s.color : (i % 2 ? "teal" : "navy"),
+      color: PALETTE[s.color] ? s.color : (s.dominance === "female_relative" ? "burgundy" : "navy"),
       id: str(s.id), name: str(s.name), dominance, zScoreDiff: z,
       coord: { lat: num(s.coord && s.coord.lat), lng: num(s.coord && s.coord.lng) },
       researchPeriod: str(s.researchPeriod), source: str(s.source), shortNote: str(s.shortNote),
@@ -752,7 +760,7 @@ const STATIONS = [
     message: "", tone: "", lastSize: "", setupMsg: "", snippet: "",
     mode: "case",                     // case: 대표 사례(A/B) | explore: 전체 대여소 탐색
     exploreStation: null, resolvedCache: new Map(),
-    explore: { q: "", gu: "", label: "" }
+    explore: { q: "", gu: "", label: "", chain: false }
   };
   const station = () => (S.mode === "explore" ? S.exploreStation : (stations[S.stationIdx] || null));
 
@@ -763,7 +771,7 @@ const STATIONS = [
       return { source: d.source, rows: d.rows.map((r) => Object.fromEntries(d.fields.map((f, i) => [f, r[i]]))) };
     } catch (e) { return { source: null, rows: [] }; }
   })();
-  const ALL = ALL_DATA.rows;
+  const ALL = ALL_DATA.rows.slice().sort((a, b) => a.id - b.id); // 대여소 번호 순
   const ALL_BY_ID = new Map(ALL.map((r) => [String(r.id), r]));
   const RUBRIC = "자전거 이용 친화도 (1점: 자전거 이용에 불친절함 ~ 7점: 자전거 이용에 친절함)";
   const METRIC_DEFS = [
@@ -779,7 +787,7 @@ const STATIONS = [
     const cached = S.resolvedCache.get(String(r.id)) || null;
     const dirs = [["북쪽(N)", "North", 0], ["동쪽(E)", "East", 90], ["남쪽(S)", "South", 180], ["서쪽(W)", "West", -90]];
     return {
-      key: "ALL", label: "전체 대여소 탐색", color: dominance === "female_relative" ? "teal" : "navy",
+      key: "ALL", label: "전체 대여소 탐색", color: dominance === "female_relative" ? "burgundy" : "navy",
       id: String(r.id), name: str(r.name), gu: str(r.gu), dominance, zScoreDiff: num(r.z),
       coord: { lat: num(r.lat), lng: num(r.lng) },
       researchPeriod: null, source: "Bike_400m_Final.ver.1.2 · BikeDock-HumanAudit · ChatGPT-Review_1", shortNote: null,
@@ -1063,6 +1071,7 @@ const STATIONS = [
       r.resolving.resolvedId = id;
       r.resolving.stops.forEach((s) => { s.panoId = id; });
       S.resolvedCache.set(r.resolving.id, id);
+      if (/찾는 중/.test(S.message)) { S.message = ""; S.tone = ""; }
       safe(() => S.pano.setPov(curStop().pov));
     }
     r.settled = true; S.req = null;
@@ -1097,6 +1106,13 @@ const STATIONS = [
   function handleTourFailure() {
     if (!S.auto.playing) return;
     clearDwellTimer();
+    if (S.mode === "explore" && S.explore.chain && (S.load === "noresult" || S.load === "error")) {
+      const d = num(cfg("tour.skipDelayMs", 3000)) || 3000;
+      setMessage(`이 대여소는 파노라마를 표시하지 못해 ${Math.round(d / 1000)}초 뒤 다음 대여소로 넘어갑니다.`, "warn");
+      clearTimeout(S.skipTimer);
+      S.skipTimer = setTimeout(() => { S.skipTimer = null; if (S.auto.playing) exploreNeighbor(1, true); }, d);
+      return;
+    }
     const n = stopList().length;
     if (cfg("tour.onLoadFailureDuringTour", "pause") === "skip" && S.stopIdx < n - 1) {
       const d = num(cfg("tour.skipDelayMs", 3000)) || 3000;
@@ -1214,6 +1230,7 @@ const STATIONS = [
     cancelAnimationFrame(S.auto.raf);
     const n = stopList().length;
     if (S.stopIdx < n - 1) { goToStop(S.stopIdx + 1); return; }
+    if (S.mode === "explore" && S.explore.chain) { exploreNeighbor(1, true); return; }
     S.auto.playing = false; S.auto.finished = true;
     setMessage("마지막 지점입니다. 자동 탐색을 마쳤습니다.");
     renderProgress();
@@ -1242,11 +1259,12 @@ const STATIONS = [
     loadCurrentStop();
   }
 
-  function selectExploreStation(id) {
+  function selectExploreStation(id, keepPlaying) {
     const r = ALL_BY_ID.get(String(id));
     if (!r) return;
     if (S.mode === "explore" && S.exploreStation && S.exploreStation.id === String(id)) return;
     stopAutoHard(); clearLoadTimers(); S.req = null;
+    if (keepPlaying) S.auto.playing = true; // 이어서 자동 탐색: 로딩 완료 후 표시 시간 계산
     S.mode = "explore";
     S.exploreStation = buildExploreStation(r);
     S.stopIdx = 0;
@@ -1263,6 +1281,18 @@ const STATIONS = [
       (!S.explore.gu || r.gu === S.explore.gu) &&
       (!S.explore.label || r.label === S.explore.label) &&
       (!q || String(r.id).startsWith(q) || (r.name || "").toLowerCase().includes(q)));
+  }
+
+  // 현재 검색·필터 목록 순서대로 이전/다음 대여소 (끝에서는 처음으로 돌아감)
+  function exploreNeighbor(delta, keepPlaying) {
+    const list = exploreMatches();
+    if (!list.length) { setMessage("조건에 맞는 대여소가 없습니다.", "warn"); return; }
+    const cur = S.exploreStation ? S.exploreStation.id : null;
+    let idx = list.findIndex((r) => String(r.id) === cur);
+    if (idx < 0) idx = delta > 0 ? -1 : 0;
+    const next = list[(idx + delta + list.length) % list.length];
+    if (list.length === 1 && cur === String(next.id)) { setMessage("목록에 대여소가 하나뿐입니다.", "warn"); return; }
+    selectExploreStation(next.id, keepPlaying);
   }
 
   function pickRandom() {
@@ -1286,7 +1316,12 @@ const STATIONS = [
         h("select", { id: "exLabel", "aria-label": "분류", onchange: (e) => { S.explore.label = e.target.value; renderExploreList(); } },
           h("option", { value: "" }, "분류 전체"), h("option", { value: "M" }, "남성 상대 우세"), h("option", { value: "F" }, "여성 상대 우세"))),
       h("div", { class: "explore-actions" },
-        h("button", { class: "btn small", id: "exRandom", onclick: pickRandom }, "조건 안에서 무작위로 고르기")),
+        h("button", { class: "btn small", id: "exPrev", onclick: () => exploreNeighbor(-1) }, "이전 대여소"),
+        h("button", { class: "btn small", id: "exNext", onclick: () => exploreNeighbor(1) }, "다음 대여소"),
+        h("button", { class: "btn small", id: "exRandom", onclick: pickRandom }, "무작위")),
+      h("label", { class: "note", style: "display:flex;gap:8px;align-items:center;cursor:pointer" },
+        h("input", { type: "checkbox", id: "exChain", onchange: (e) => { S.explore.chain = e.target.checked; } }),
+        "자동 탐색 때 4방향을 다 보면 목록의 다음 대여소로 이어서 진행"),
       h("div", { class: "explore-count", id: "exCount", "aria-live": "polite" }),
       h("div", { class: "explore-list", id: "exList", role: "list" })
     );
@@ -1303,10 +1338,12 @@ const STATIONS = [
       ? `${list.length.toLocaleString("ko-KR")}곳 중 ${max}곳 표시 — 검색어나 조건으로 좁혀 보세요`
       : `${list.length.toLocaleString("ko-KR")}곳`;
     box.replaceChildren(...list.slice(0, max).map((r) => {
-      const p = PALETTE[r.label === "F" ? "teal" : "navy"];
+      const p = PALETTE[r.label === "F" ? "burgundy" : "navy"];
+      const tag = h("span", { class: "dom-tag", text: r.label === "M" ? "남성 상대 우세" : r.label === "F" ? "여성 상대 우세" : "분류 미등록" });
+      tag.style.background = p.c;
       const b = h("button", { class: "explore-item", role: "listitem", "aria-current": String(String(r.id) === cur), onclick: () => selectExploreStation(r.id) },
         `${r.id} · ${r.name || "이름 미등록"}`,
-        h("span", { class: "ei-meta", text: `${r.gu || ""} · ${r.label === "M" ? "남성 상대 우세" : r.label === "F" ? "여성 상대 우세" : "분류 미등록"} · VLM ${r.llm !== null ? r.llm : "–"}점` }));
+        h("span", { class: "ei-meta" }, tag, `${r.gu || ""} · VLM ${r.llm !== null ? r.llm : "–"}점`));
       b.style.setProperty("--c", p.c);
       return b;
     }));
@@ -1581,6 +1618,8 @@ const STATIONS = [
     $("btnPlay").disabled = !n || !ready || S.auto.playing;
     $("btnPause").disabled = !S.auto.playing;
     $("btnView").disabled = !ready || !S.pano || !curStop() || !curStop().panoId;
+    const ex = S.mode === "explore" && exploreOn();
+    $("btnPrevStation").hidden = !ex; $("btnNextStation").hidden = !ex; $("ptNextStation").hidden = !ex;
     $("ptPrev").disabled = $("btnPrev").disabled;
     $("ptNext").disabled = $("btnNext").disabled;
     $("ptPlay").disabled = !n || !ready;
@@ -1855,6 +1894,9 @@ const STATIONS = [
   $("btnPlay").addEventListener("click", startAuto);
   $("btnPause").addEventListener("click", () => pauseAuto("자동 탐색을 일시정지했습니다."));
   $("btnView").addEventListener("click", resetView);
+  $("btnPrevStation").addEventListener("click", () => exploreNeighbor(-1));
+  $("btnNextStation").addEventListener("click", () => exploreNeighbor(1));
+  $("ptNextStation").addEventListener("click", () => exploreNeighbor(1));
   $("btnBackToStop").addEventListener("click", () => goToStop(S.stopIdx));
   $("btnPanel").addEventListener("click", () => { S.panelOpen = !S.panelOpen; renderHeader(); });
   $("btnPresent").addEventListener("click", () => togglePresent(true));
