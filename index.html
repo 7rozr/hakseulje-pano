@@ -1,0 +1,1469 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>같은 도시, 다른 이용환경</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f4f6f9;
+    --surface-2: #e9edf2;
+    --line: #d7dde6;
+    --ink: #16213a;
+    --ink-2: #39455a;
+    --muted: #5d6879;
+    --navy: #1d3a6b;
+    --navy-soft: #e8edf6;
+    --teal: #0f6e66;
+    --teal-soft: #e3f1ef;
+    --accent: var(--navy);
+    --accent-soft: var(--navy-soft);
+    --warn: #7a5200;
+    --warn-soft: #fbf4e4;
+    --error: #9e2329;
+    --error-soft: #fbeced;
+    --radius: 10px;
+    --font: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  }
+  body[data-accent="teal"] { --accent: var(--teal); --accent-soft: var(--teal-soft); }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font-family: var(--font); font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; }
+  [hidden] { display: none !important; }
+
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ---------- 상단 ---------- */
+  .topbar {
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--bg);
+  }
+  .brand { flex: 1 1 340px; min-width: 0; }
+  .title { margin: 0; font-size: 24px; line-height: 1.25; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+  .subtitle { margin: 2px 0 0; font-size: 16px; color: var(--muted); }
+  .station-switch { display: flex; gap: 10px; flex-wrap: wrap; }
+  .station-btn {
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+    min-width: 168px; min-height: 56px; padding: 6px 16px 6px 18px; position: relative;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; text-align: left;
+  }
+  .station-btn::before {
+    content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 5px; border-radius: 0 3px 3px 0;
+    background: var(--c, var(--navy));
+  }
+  .station-btn .sb-label { font-weight: 700; font-size: 17px; }
+  .station-btn .sb-dom { font-size: 14px; color: var(--muted); }
+  .station-btn[aria-pressed="true"] { border-color: var(--c); background: var(--c-soft); box-shadow: inset 0 0 0 1px var(--c); }
+  .top-actions { display: flex; gap: 8px; }
+
+  .station-strip {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--line);
+  }
+  .strip-key { font-weight: 700; color: var(--accent); }
+  .strip-name { font-size: 20px; font-weight: 700; }
+  .strip-id { color: var(--muted); }
+  .dom-badge {
+    display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--accent); color: var(--accent); background: #fff; font-size: 15px; font-weight: 600;
+  }
+  .strip-rule { color: var(--muted); font-size: 14px; }
+
+  /* ---------- 버튼 ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px; padding: 0 18px; border-radius: 8px; border: 1px solid var(--line);
+    background: #fff; color: var(--ink); font-size: 17px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: .42; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.08); }
+  .btn.small { min-height: 40px; padding: 0 12px; font-size: 15px; }
+  .btn svg { width: 20px; height: 20px; flex: none; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- 본문 레이아웃 ---------- */
+  .layout { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 420px; min-height: 0; }
+  .layout.panel-closed { grid-template-columns: minmax(0, 1fr); }
+  .layout.panel-closed .panel { display: none; }
+  .stage { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+  .pano-wrap { position: relative; flex: 1; min-height: 420px; background: var(--surface-2); overflow: hidden; }
+  .pano { position: absolute; inset: 0; }
+  .pano:focus-visible { outline-offset: -3px; }
+  .pano-node { width: 100%; height: 100%; }
+
+  .progress { position: absolute; left: 0; right: 0; top: 0; height: 4px; background: transparent; z-index: 5; pointer-events: none; }
+  .progress span { display: block; height: 100%; width: 0; background: var(--accent); }
+
+  .stop-badge {
+    position: absolute; top: 14px; left: 14px; z-index: 6; max-width: min(70%, 640px);
+    display: flex; align-items: baseline; gap: 10px; padding: 8px 14px; border-radius: 8px;
+    background: rgba(255,255,255,.94); border: 1px solid var(--line); pointer-events: none;
+  }
+  .stop-count { font-weight: 700; font-size: 20px; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .stop-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .loading-chip {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 6;
+    padding: 8px 16px; border-radius: 999px; background: rgba(22,33,58,.88); color: #fff; font-size: 15px;
+  }
+  .deviation {
+    position: absolute; top: 14px; right: 14px; z-index: 6; max-width: 360px;
+    padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); border: 1px solid #e6cf9c; color: var(--warn); font-size: 15px;
+  }
+  .deviation .btn { margin-top: 8px; }
+
+  .overlay { position: absolute; inset: 0; z-index: 7; display: flex; align-items: center; justify-content: center; padding: 24px; pointer-events: none; }
+  .overlay.full { background: var(--surface-2); pointer-events: auto; }
+  .overlay-card {
+    pointer-events: auto; max-width: 620px; width: 100%; padding: 22px 26px; border-radius: var(--radius);
+    background: #fff; border: 1px solid var(--line); box-shadow: 0 6px 24px rgba(22,33,58,.10);
+  }
+  .overlay-card[data-tone="error"] { border-top: 4px solid var(--error); }
+  .overlay-card[data-tone="warn"] { border-top: 4px solid #c99a2e; }
+  .overlay-card[data-tone="setup"], .overlay-card[data-tone="info"] { border-top: 4px solid var(--accent); }
+  .overlay-card h2 { margin: 0 0 8px; font-size: 21px; }
+  .overlay-card p { margin: 6px 0; color: var(--ink-2); }
+  .overlay-card code { font-size: 15px; background: var(--surface); padding: 1px 6px; border-radius: 4px; word-break: break-all; }
+  .ov-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+  /* ---------- 하단 조작부 ---------- */
+  .controls {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap;
+    padding: 12px 24px; border-top: 1px solid var(--line); background: #fff;
+  }
+  .ctrl-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ctrl-status { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 260px; justify-content: flex-end; }
+  .counter { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); white-space: nowrap; }
+  .status-msg { color: var(--muted); font-size: 15px; text-align: right; }
+  .status-msg[data-tone="warn"] { color: var(--warn); }
+  .status-msg[data-tone="error"] { color: var(--error); }
+
+  /* ---------- 정보 패널 ---------- */
+  .panel { border-left: 1px solid var(--line); background: #fff; overflow-y: auto; min-height: 0; }
+  .panel details { border-bottom: 1px solid var(--line); }
+  .panel summary {
+    list-style: none; cursor: pointer; padding: 14px 20px; font-weight: 700; font-size: 17px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .panel summary::-webkit-details-marker { display: none; }
+  .panel summary::after { content: "펼치기"; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .panel details[open] > summary::after { content: "접기"; }
+  .panel summary:hover { background: var(--surface); }
+  .sec-body { padding: 0 20px 18px; font-size: 16px; }
+  .sec-body h3 { margin: 4px 0 6px; font-size: 18px; }
+  .sec-body p { margin: 6px 0; }
+  .kv { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 6px 12px; margin: 6px 0; }
+  .kv dt { color: var(--muted); font-size: 15px; }
+  .kv dd { margin: 0; word-break: break-word; }
+  .missing { color: var(--muted); font-style: normal; background: var(--surface); padding: 0 6px; border-radius: 4px; font-size: 15px; }
+  .note { font-size: 14px; color: var(--muted); margin: 8px 0; }
+  .callout { font-size: 15px; padding: 10px 12px; border-radius: 8px; background: var(--surface); border-left: 3px solid var(--accent); margin: 10px 0; color: var(--ink-2); }
+  .callout.warn { background: var(--warn-soft); border-left-color: #c99a2e; color: var(--warn); }
+  .ok { color: var(--teal); font-weight: 600; }
+  .bad { color: var(--warn); font-weight: 600; }
+  table.data { width: 100%; border-collapse: collapse; font-size: 15px; margin: 8px 0; }
+  table.data th, table.data td { text-align: left; vertical-align: top; padding: 7px 6px; border-bottom: 1px solid var(--line); }
+  table.data th { color: var(--muted); font-weight: 600; font-size: 14px; }
+  table.data td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .vlm-score { font-size: 30px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .vlm-score small { font-size: 17px; color: var(--muted); font-weight: 500; }
+  .principles { margin: 4px 0; padding-left: 20px; font-size: 15px; color: var(--ink-2); }
+  .principles li { margin: 4px 0; }
+
+  .setup-field { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+  .setup-field label { display: flex; flex-direction: column; font-size: 14px; color: var(--muted); flex: 1 1 120px; }
+  .setup-field input { font: inherit; font-size: 16px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; min-height: 42px; }
+  .snippet { width: 100%; min-height: 150px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+  .warn-list { margin: 6px 0; padding-left: 18px; font-size: 14px; color: var(--warn); }
+
+  /* ---------- 발표 모드 ---------- */
+  .present-tools { display: none; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .caption { display: none; }
+  body.is-present .subtitle,
+  body.is-present .station-switch,
+  body.is-present .top-actions,
+  body.is-present .controls,
+  body.is-present .panel,
+  body.is-present .footer { display: none !important; }
+  body.is-present .layout { grid-template-columns: minmax(0, 1fr); }
+  body.is-present .present-tools { display: flex; transition: opacity .2s; }
+  body.is-present.ui-idle .present-tools { opacity: 0; }
+  body.is-present .topbar { padding: 10px 24px; }
+  body.is-present .title { font-size: 22px; }
+  body.is-present .caption {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 24px; align-items: end;
+    padding: 14px 24px 12px; border-top: 1px solid var(--line); background: #fff;
+  }
+  .cap-main { font-size: 21px; font-weight: 700; }
+  .cap-note { font-size: 18px; color: var(--ink-2); }
+  .cap-meta { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
+  .cap-count { font-size: 24px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+  /* ---------- 하단 출처 ---------- */
+  .footer { padding: 10px 24px; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); background: var(--surface); }
+  .footer span + span::before { content: " · "; }
+
+  /* ---------- 화면 크기 ---------- */
+  @media (min-width: 961px) {
+    .app { height: 100vh; }
+  }
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+    .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+    .pano-wrap { flex: none; height: 62vh; min-height: 320px; }
+    .topbar, .station-strip, .controls, .footer { padding-left: 16px; padding-right: 16px; }
+    .station-btn { min-width: 0; flex: 1 1 140px; }
+    .ctrl-status { justify-content: flex-start; }
+    .status-msg { text-align: left; }
+    body.is-present .pano-wrap { height: 72vh; }
+  }
+  @media (max-width: 560px) {
+    .ctrl-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+    .ctrl-group .btn { padding: 0 8px; font-size: 16px; }
+    .title { font-size: 21px; }
+    .stop-badge { max-width: calc(100% - 28px); }
+  }
+</style>
+</head>
+<body data-accent="navy">
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <h1 class="title">같은 도시, 다른 이용환경</h1>
+      <p class="subtitle">성별 상대 우세 따릉이 대여소 주변의 실사 가상 탐색</p>
+    </div>
+    <nav class="station-switch" id="stationSwitch" aria-label="대여소 선택"></nav>
+    <div class="top-actions">
+      <button class="btn" id="btnPanel" aria-controls="panel" aria-expanded="true">정보 패널 접기</button>
+      <button class="btn" id="btnPresent">발표 모드</button>
+    </div>
+    <div class="present-tools" id="presentTools" aria-label="발표 모드 조작">
+      <span id="ptStations" style="display:flex;gap:6px"></span>
+      <button class="btn small" id="ptPrev">이전</button>
+      <button class="btn small primary" id="ptPlay">자동 탐색 시작</button>
+      <button class="btn small" id="ptNext">다음</button>
+      <button class="btn small" id="ptFull">전체 화면</button>
+      <button class="btn small" id="ptExit">발표 모드 종료</button>
+    </div>
+  </header>
+
+  <div class="station-strip" id="stationStrip">
+    <span class="strip-key" id="stripKey"></span>
+    <span class="strip-name" id="stripName"></span>
+    <span class="strip-id" id="stripId"></span>
+    <span class="dom-badge" id="stripDom"></span>
+    <span class="strip-rule" id="stripRule"></span>
+  </div>
+
+  <main class="layout" id="layout">
+    <section class="stage" aria-label="거리뷰">
+      <div class="pano-wrap" id="panoWrap">
+        <div class="pano" id="pano" tabindex="0" aria-label="네이버 파노라마. 마우스로 끌어 주변을 둘러볼 수 있습니다."></div>
+        <div class="progress" aria-hidden="true"><span id="dwellFill"></span></div>
+        <div class="stop-badge" id="stopBadge"><span class="stop-count" id="stopCount"></span><span class="stop-title" id="stopTitle"></span></div>
+        <div class="loading-chip" id="loadingChip" hidden>파노라마를 불러오는 중…</div>
+        <div class="deviation" id="deviation" hidden>
+          <div id="deviationText"></div>
+          <button class="btn small" id="btnBackToStop">지정 지점으로 돌아가기</button>
+        </div>
+        <div class="overlay" id="overlay" hidden>
+          <div class="overlay-card" id="overlayCard" role="status">
+            <h2 id="ovTitle"></h2>
+            <div id="ovBody"></div>
+            <div class="ov-actions" id="ovActions"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls" id="controls">
+        <div class="ctrl-group">
+          <button class="btn" id="btnFirst"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14M18 5l-8 7 8 7"/></svg>처음으로</button>
+          <button class="btn" id="btnPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>이전 지점</button>
+          <button class="btn primary" id="btnPlay"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>자동 탐색 시작</button>
+          <button class="btn" id="btnPause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8 5v14M16 5v14"/></svg>일시정지</button>
+          <button class="btn" id="btnNext">다음 지점<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+          <button class="btn" id="btnView"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>기본 시야로</button>
+        </div>
+        <div class="ctrl-status">
+          <span class="status-msg" id="statusMsg" aria-live="polite"></span>
+          <span class="counter" id="ctrlCounter"></span>
+        </div>
+      </div>
+
+      <div class="caption" id="caption">
+        <div>
+          <div class="cap-main" id="capMain"></div>
+          <div class="cap-note" id="capNote"></div>
+        </div>
+        <div class="cap-count" id="capCount"></div>
+        <div class="cap-meta" id="capMeta"></div>
+      </div>
+    </section>
+
+    <aside class="panel" id="panel" aria-label="환경정보 패널">
+      <details id="secStop" open><summary>현재 지점 설명</summary><div class="sec-body" id="bodyStop"></div></details>
+      <details id="secStation" open><summary>대여소 정보</summary><div class="sec-body" id="bodyStation"></div></details>
+      <details id="secMetrics" open><summary>대여소 환경지표</summary><div class="sec-body" id="bodyMetrics"></div></details>
+      <details id="secVlm" open><summary>VLM 평가</summary><div class="sec-body" id="bodyVlm"></div></details>
+      <details id="secPano"><summary>파노라마 촬영 정보</summary><div class="sec-body" id="bodyPano"></div></details>
+      <details id="secGroup"><summary>집단 수준 비교 결과</summary><div class="sec-body" id="bodyGroup"></div></details>
+      <details id="secNotes"><summary>해석 시 유의사항</summary><div class="sec-body" id="bodyNotes"></div></details>
+      <details id="secSource"><summary>연구자료 기준 시점·출처</summary><div class="sec-body" id="bodySource"></div></details>
+      <details id="secSetup"><summary>설정 도우미 (전시 전 확인용)</summary><div class="sec-body" id="bodySetup"></div></details>
+    </aside>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+ * 1. 설정 영역 — 실제 자료는 이 아래 세 객체만 바꾸면 됩니다.
+ *    값이 없으면 null 로 두세요. 화면에는 "자료 미등록"으로 표시됩니다.
+ * ===================================================================== */
+
+/* ==== APP_CONFIG START ==== */
+const APP_CONFIG = {
+  naver: {
+    // NCP 콘솔 > Application Services > Maps > Application 에서 확인한 "Client ID".
+    // 스크립트 주소에 그대로 들어가므로 브라우저에 노출되는 식별자입니다.
+    // Client Secret 은 이 파일에 절대 넣지 마세요(웹 지도 표시에는 필요하지 않습니다).
+    ncpKeyId: "d0fx8h4dwk",   // NCP Application "hakseulje-pano" (2026-11-03 등록)
+    scriptUrl: "https://oapi.map.naver.com/openapi/v3/maps.js",
+    submodules: "panorama",
+    sdkLoadTimeoutMs: 15000
+  },
+  // naver.maps.Panorama 생성 옵션(공식 문서 PanoramaOptions 에 있는 항목만 사용)
+  panoramaOptions: {
+    logoControl: true,      // 네이버 로고 표시. 필수 표기이므로 끄지 마세요.
+    flightSpot: false,      // 주변 항공뷰 아이콘 표시 여부
+    aroundControl: false,   // 거리뷰/항공뷰 전환 컨트롤
+    zoomControl: false      // 확대/축소 컨트롤
+  },
+  // 지점에 pov 가 없을 때 쓰는 기본 시야 (공식 범위: pan -180~180, tilt -90~90, fov 20~100)
+  defaultPov: { pan: 0, tilt: 0, fov: 90 },
+  tour: {
+    defaultDwellMs: 6000,        // 지점에 dwellMs 가 없을 때 표시 시간
+    minDwellMs: 1500,            // 이보다 짧은 값은 이 값으로 올림
+    panoLoadTimeoutMs: 12000,    // 이 시간 안에 로딩 완료 신호가 없으면 지연 안내
+    pauseOnUserInteraction: true,// 관람객이 파노라마를 직접 조작하면 자동 탐색 일시정지
+    onLoadFailureDuringTour: "pause", // "pause": 멈추고 안내 / "skip": 안내 후 다음 지점으로
+    skipDelayMs: 3000
+  },
+  ui: {
+    showSetupTools: true,        // 전시 당일에는 false 권장 (설정 도우미 숨김)
+    panelOpenByDefault: true,
+    startInPresentationMode: false,
+    presentationIdleHideMs: 2500,// 발표 모드에서 마우스를 멈추면 조작 버튼을 숨기는 시간
+    presentationRecordingNote: "녹화 영상에서는 시점을 직접 돌릴 수 없습니다. 직접 둘러보기는 전시 웹페이지에서만 가능합니다."
+  }
+};
+/* ==== APP_CONFIG END ==== */
+
+/* ==== RESEARCH START ==== */
+const RESEARCH = {
+  studyTitle: "비전-언어모델(VLM)을 활용한 공유자전거 이용의 성별 격차 분석: 서울시를 중심으로",
+  authors: null,             // 예: "OOO, OOO, 김지우"
+  dataPeriod: null,          // 이용자료 기준 기간
+  dataSource: null,          // 이용자료 출처
+  classificationMethod:
+    "대여소별 남녀 이용량을 각각 Z점수로 표준화한 뒤 남성 Z점수에서 여성 Z점수를 뺀 값으로 분류했습니다. " +
+    "양수는 남성 상대 우세, 음수는 여성 상대 우세 대여소입니다. 이는 각 성별 이용량 분포 안에서 대여소가 차지하는 " +
+    "상대적 위치를 뜻하며, 남성 또는 여성의 절대 이용자가 더 많다는 뜻이 아닙니다.",
+  // 전체 대여소를 두 집단으로 나눈 평균 비교 결과 (개별 대여소 값과 구분해 표시됩니다)
+  groupFindings: {
+    summary: null,           // 예: 분석 방법·대상 대여소 수
+    source: null,
+    items: [
+      // { name: "지표명", unit: "%", scope: "측정 범위", maleRelative: 0, femaleRelative: 0, statistic: "t = 0.00", pValue: "0.000", note: null }
+    ]
+  }
+};
+/* ==== RESEARCH END ==== */
+
+/* ==== STATIONS START ==== */
+const STATIONS = [
+  {
+    key: "A",
+    label: "대여소 A",
+    color: "navy",                 // "navy" | "teal" — 장소 구분용 색 (성별 색 아님)
+    id: "4962",                    // 대여소 번호
+    name: "고덕비즈밸리 디엠스퀘어 앞", // 대여소명
+    dominance: "male_relative",    // "male_relative" | "female_relative"
+    zScoreDiff: null,              // 남성 Z − 여성 Z
+    coord: { lat: 37.56755066, lng: 127.161026 },  // 설정 도우미의 '좌표로 파노라마 찾기'에만 사용
+    researchPeriod: null,
+    source: null,
+    shortNote: null,               // 발표 모드 하단의 짧은 환경 설명 (측정 범위를 함께 적기)
+    metrics: [
+      // { name: "지표명", value: 0, unit: "%", scope: "대여소 반경 400m 네트워크 버퍼", source: "자료 출처" }
+    ],
+    vlm: {
+      score: 7,
+      scaleMax: 7,
+      humanAuditorScore: 4,        // 인간 평가자 평균 점수 (같은 척도)
+      rubric: null,                // 평가 기준 이름
+      explanation:                 // VLM이 생성한 설명문 (원문)
+        "The station is highly visible along an active office/commercial frontage, with a large, orderly bike dock, " +
+        "wide sidewalks, streetlights, and nearby pedestrian crossings. A separated red cycling corridor and continuous " +
+        "railings provide a strong buffer from the multi-lane road, while the clean, maintained streetscape and " +
+        "surrounding buildings support surveillance and convenient access.",
+      evaluatedImageReference: "연구 그림의 4방향(North·East·South·West) 거리뷰 이미지, UNIQUE ID 4962",
+      evaluatedPanoId: null        // VLM이 이 네이버 파노라마 자체를 평가했다면 그 ID
+    },
+    stops: [
+      // 설정 도우미로 확인한 지점을 여기에 붙여 넣기
+      // { panoId: "…", pov: { pan: 0, tilt: 0, fov: 90 }, title: "…", description: "…", dwellMs: 6000 },
+    ]
+  },
+  {
+    key: "B",
+    label: "대여소 B",
+    color: "teal",
+    id: "4453",
+    name: "위례중앙푸르지오 201동 앞",
+    dominance: "female_relative",
+    zScoreDiff: null,
+    coord: { lat: 37.47434616, lng: 127.14326477 },
+    researchPeriod: null,
+    source: null,
+    shortNote: null,
+    metrics: [],
+    vlm: {
+      score: 6,
+      scaleMax: 7,
+      humanAuditorScore: 6,
+      rubric: null,
+      explanation:
+        "The station is in a clean, spacious, highly visible mixed residential-commercial plaza with marked pedestrian " +
+        "paving, lighting, nearby shops, and an active streetscape that support easy access and natural surveillance. " +
+        "Bikes and the docking kiosk are clearly arranged beside a broad walkway, while bollards and landscaping provide " +
+        "some separation from traffic; however, the station sits near a busy road/intersection and its bike area lacks " +
+        "a strongly protected dedicated cycling connection.",
+      evaluatedImageReference: "연구 그림의 4방향(North·East·South·West) 거리뷰 이미지, UNIQUE ID 4453",
+      evaluatedPanoId: null
+    },
+    stops: []
+  }
+];
+/* ==== STATIONS END ==== */
+
+
+/* =====================================================================
+ * 2. 앱 코드 — 일반적으로 수정할 필요가 없습니다.
+ * ===================================================================== */
+(() => {
+  const MISSING = "자료 미등록";
+  const DOMINANCE = {
+    male_relative:   { short: "남성 상대 우세", full: "남성 상대 우세 대여소", rule: "남성 Z점수 − 여성 Z점수 > 0" },
+    female_relative: { short: "여성 상대 우세", full: "여성 상대 우세 대여소", rule: "남성 Z점수 − 여성 Z점수 < 0" }
+  };
+  const PALETTE = {
+    navy: { c: "#1d3a6b", soft: "#e8edf6" },
+    teal: { c: "#0f6e66", soft: "#e3f1ef" }
+  };
+
+  /* ---------- 유틸 ---------- */
+  const $ = (id) => document.getElementById(id);
+  const has = (v) => v !== null && v !== undefined &&
+    !(typeof v === "string" && v.trim() === "") && !(typeof v === "number" && !Number.isFinite(v));
+  const num = (v) => {
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+    return null;
+  };
+  const str = (v) => has(v) ? String(v) : null;
+  const safe = (fn) => { try { return fn(); } catch (e) { return null; } };
+  const cfg = (path, fallback) => {
+    const v = path.split(".").reduce((o, k) => (o && o[k] !== undefined ? o[k] : undefined), APP_CONFIG);
+    return v === undefined ? fallback : v;
+  };
+
+  function h(tag, props, ...children) {
+    const e = document.createElement(tag);
+    if (props) for (const [k, v] of Object.entries(props)) {
+      if (v === null || v === undefined || v === false) continue;
+      if (k === "class") e.className = v;
+      else if (k === "text") e.textContent = v;
+      else if (k.startsWith("on") && typeof v === "function") e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? "" : String(v));
+    }
+    for (const c of children.flat()) {
+      if (c === null || c === undefined || c === false) continue;
+      e.append(c instanceof Node ? c : document.createTextNode(String(c)));
+    }
+    return e;
+  }
+  const fill = (id, ...kids) => $(id).replaceChildren(...kids.flat().filter((k) => k !== null && k !== undefined && k !== false));
+  const miss = (label) => h("span", { class: "missing", text: label || MISSING });
+  const val = (v, suffix) => has(v) ? String(v) + (suffix || "") : miss();
+  function kv(rows) {
+    const dl = h("dl", { class: "kv" });
+    rows.forEach(([k, v]) => { dl.append(h("dt", { text: k }), h("dd", null, v)); });
+    return dl;
+  }
+
+  /* ---------- 설정 정리·점검 ---------- */
+  const warnings = [];
+  const minDwell = num(cfg("tour.minDwellMs", 1500)) || 1500;
+  const defaultDwell = Math.max(minDwell, num(cfg("tour.defaultDwellMs", 6000)) || 6000);
+  const defPov = Object.assign({ pan: 0, tilt: 0, fov: 90 }, cfg("defaultPov", {}));
+
+  function normPov(p, where) {
+    const s = p && typeof p === "object" ? p : {};
+    let pan = num(s.pan), tilt = num(s.tilt), fov = num(s.fov);
+    if (pan === null) pan = num(defPov.pan) || 0;
+    if (pan < -180 || pan > 180) {
+      const w = ((pan + 180) % 360 + 360) % 360 - 180;
+      warnings.push(`${where}: pan ${pan} → ${w} 로 조정 (공식 범위 -180~180)`); pan = w;
+    }
+    if (tilt === null) tilt = num(defPov.tilt) || 0;
+    if (tilt < -90 || tilt > 90) {
+      const c = Math.max(-90, Math.min(90, tilt));
+      warnings.push(`${where}: tilt ${tilt} → ${c} 로 조정 (공식 범위 -90~90)`); tilt = c;
+    }
+    if (fov === null) fov = num(defPov.fov) || 90;
+    if (fov < 20 || fov > 100) {
+      const c = Math.max(20, Math.min(100, fov));
+      warnings.push(`${where}: fov ${fov} → ${c} 로 조정 (공식 범위 20~100)`); fov = c;
+    }
+    return { pan, tilt, fov };
+  }
+
+  const stations = (Array.isArray(STATIONS) ? STATIONS : []).map((raw, i) => {
+    const s = raw && typeof raw === "object" ? raw : {};
+    const key = str(s.key) || String.fromCharCode(65 + i);
+    const label = str(s.label) || `대여소 ${key}`;
+    const stops = (Array.isArray(s.stops) ? s.stops : []).map((rawStop, j) => {
+      const st = rawStop && typeof rawStop === "object" ? rawStop : {};
+      const where = `${label} 지점 ${j + 1}`;
+      const panoId = typeof st.panoId === "string" && st.panoId.trim() ? st.panoId.trim() : null;
+      if (has(st.panoId) && !panoId) warnings.push(`${where}: panoId 는 따옴표로 감싼 문자열이어야 합니다`);
+      if (!panoId) warnings.push(`${where}: 파노라마 ID 미입력 (자료 미등록으로 표시)`);
+      let dwell = num(st.dwellMs);
+      if (dwell === null) dwell = defaultDwell;
+      else if (dwell < minDwell) { warnings.push(`${where}: dwellMs ${dwell} → ${minDwell} 로 조정`); dwell = minDwell; }
+      return { panoId, pov: normPov(st.pov, where), title: str(st.title), description: str(st.description), dwellMs: dwell };
+    });
+    if (!stops.length) warnings.push(`${label}: 촬영 지점(stops)이 비어 있습니다`);
+    const dominance = DOMINANCE[s.dominance] ? s.dominance : null;
+    if (!dominance) warnings.push(`${label}: dominance 값이 "male_relative" 또는 "female_relative"가 아닙니다`);
+    const z = num(s.zScoreDiff);
+    if (z !== null && dominance && ((z > 0 && dominance === "female_relative") || (z < 0 && dominance === "male_relative")))
+      warnings.push(`${label}: zScoreDiff(${z})의 부호와 dominance 분류가 맞지 않습니다`);
+    const v = s.vlm && typeof s.vlm === "object" ? s.vlm : {};
+    const metrics = (Array.isArray(s.metrics) ? s.metrics : []).filter((m) => m && typeof m === "object");
+    metrics.forEach((m, k) => { if (!has(m.scope)) warnings.push(`${label} 환경지표 ${k + 1}(${m.name || "이름 없음"}): 측정 범위(scope) 미입력`); });
+    return {
+      key, label,
+      color: PALETTE[s.color] ? s.color : (i % 2 ? "teal" : "navy"),
+      id: str(s.id), name: str(s.name), dominance, zScoreDiff: z,
+      coord: { lat: num(s.coord && s.coord.lat), lng: num(s.coord && s.coord.lng) },
+      researchPeriod: str(s.researchPeriod), source: str(s.source), shortNote: str(s.shortNote),
+      metrics,
+      vlm: {
+        score: num(v.score), scaleMax: num(v.scaleMax), humanAuditorScore: num(v.humanAuditorScore),
+        rubric: str(v.rubric), explanation: str(v.explanation),
+        evaluatedImageReference: str(v.evaluatedImageReference), evaluatedPanoId: str(v.evaluatedPanoId)
+      },
+      stops
+    };
+  });
+  if (!stations.length) warnings.push("STATIONS 배열이 비어 있습니다");
+  if (!has(cfg("naver.ncpKeyId", ""))) warnings.push("APP_CONFIG.naver.ncpKeyId(Client ID) 미입력");
+
+  /* ---------- 상태 ---------- */
+  const S = {
+    stationIdx: 0, stopIdx: 0,
+    sdk: "idle", sdkError: "",        // idle | no_key | loading | ready | failed | auth_failed
+    pano: null, listeners: [],
+    req: null, loadSeq: 0,
+    loadTimer: null, graceTimer: null, skipTimer: null,
+    load: "idle",                     // idle | loading | loaded | error | timeout | nodata | nostops | nostation
+    loadError: "", loadedPanoId: null,
+    location: null, pov: null,
+    exploring: false, deviated: false,
+    auto: { playing: false, timer: null, raf: 0, startedAt: 0, runMs: 0, stopTotal: 0, remaining: null, finished: false },
+    present: false, panelOpen: cfg("ui.panelOpenByDefault", true) !== false,
+    message: "", tone: "", lastSize: "", setupMsg: "", snippet: ""
+  };
+  const station = () => stations[S.stationIdx] || null;
+  const stopList = () => (station() ? station().stops : []);
+  const curStop = () => stopList()[S.stopIdx] || null;
+  const dom = (st) => (st && DOMINANCE[st.dominance]) || null;
+
+  function setMessage(msg, tone) {
+    S.message = msg || ""; S.tone = tone || "";
+    renderControls();
+  }
+
+  /* ---------- 네이버 지도 API 로딩 ---------- */
+  function loadSdk() {
+    const key = String(cfg("naver.ncpKeyId", "") || "").trim();
+    if (!key) { S.sdk = "no_key"; renderAll(); return; }
+    S.sdk = "loading"; renderAll();
+    const cbName = "__naverPanoramaReady";
+    let settled = false;
+    const timeoutMs = num(cfg("naver.sdkLoadTimeoutMs", 15000)) || 15000;
+    const timer = setTimeout(() => {
+      if (settled) return; settled = true;
+      sdkFail(`${Math.round(timeoutMs / 1000)}초 안에 스크립트 로딩이 끝나지 않았습니다.`);
+    }, timeoutMs);
+
+    // 공식 문서: 인증 실패 시 전역 함수 navermap_authFailure 가 호출됨
+    window.navermap_authFailure = function () {
+      settled = true; clearTimeout(timer);
+      S.sdk = "auth_failed";
+      stopAutoHard(); clearLoadTimers(); S.req = null;
+      renderAll();
+    };
+    // 공식 문서: callback 파라미터 함수는 서브 모듈까지 로드된 뒤 1회 호출됨
+    window[cbName] = function () {
+      settled = true; clearTimeout(timer);
+      if (S.sdk === "auth_failed") return;
+      if (!(window.naver && naver.maps && typeof naver.maps.Panorama === "function")) {
+        sdkFail("panorama 서브 모듈을 찾지 못했습니다. submodules=panorama 설정을 확인하세요."); return;
+      }
+      S.sdk = "ready"; S.sdkError = "";
+      renderAll();
+      loadCurrentStop();
+    };
+    const params = new URLSearchParams({ ncpKeyId: key, submodules: cfg("naver.submodules", "panorama"), callback: cbName });
+    const sc = document.createElement("script");
+    sc.src = `${cfg("naver.scriptUrl", "https://oapi.map.naver.com/openapi/v3/maps.js")}?${params.toString()}`;
+    sc.async = true;
+    sc.onerror = () => {
+      if (settled) return; settled = true; clearTimeout(timer);
+      sdkFail("스크립트 요청이 실패했습니다. 인터넷 연결, 방화벽, 스크립트 주소를 확인하세요.");
+    };
+    document.head.appendChild(sc);
+  }
+  function sdkFail(msg) {
+    if (S.sdk === "auth_failed") return;
+    S.sdk = "failed"; S.sdkError = msg;
+    stopAutoHard();
+    renderAll();
+  }
+
+  /* ---------- 파노라마 인스턴스 ---------- */
+  function panoSize() {
+    const r = $("pano").getBoundingClientRect();
+    return { w: Math.max(1, Math.round(r.width)), h: Math.max(1, Math.round(r.height)) };
+  }
+  function createPano(extra) {
+    destroyPano();
+    const node = h("div", { class: "pano-node" });
+    $("pano").append(node);
+    const { w, h: hh } = panoSize();
+    S.lastSize = `${w}x${hh}`;
+    const opts = Object.assign({}, cfg("panoramaOptions", {}), extra, { size: new naver.maps.Size(w, hh) });
+    S.pano = new naver.maps.Panorama(node, opts);
+    const E = naver.maps.Event;
+    S.listeners = [
+      E.addListener(S.pano, "pano_status", onPanoStatus),
+      E.addListener(S.pano, "pano_changed", onPanoChanged),
+      E.addListener(S.pano, "pov_changed", onPovChanged)
+    ];
+  }
+  function destroyPano() {
+    if (S.pano && window.naver && naver.maps && naver.maps.Event) {
+      safe(() => naver.maps.Event.removeListener(S.listeners));
+      safe(() => naver.maps.Event.clearInstanceListeners(S.pano));
+    }
+    S.listeners = []; S.pano = null; S.loadedPanoId = null; S.location = null; S.pov = null;
+    $("pano").replaceChildren();
+  }
+  function hidePano() { if (S.pano) safe(() => S.pano.setVisible(false)); }
+
+  // 컨테이너 크기가 바뀌면 setSize 로 반영 (공식 문서: size 생략 시 초기 크기를 유지)
+  let resizeRaf = 0;
+  const ro = new ResizeObserver(() => {
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      if (!S.pano) return;
+      const { w, h: hh } = panoSize();
+      const key = `${w}x${hh}`;
+      if (key === S.lastSize) return;
+      S.lastSize = key;
+      safe(() => S.pano.setSize(new naver.maps.Size(w, hh)));
+    });
+  });
+  ro.observe($("pano"));
+
+  /* ---------- 지점 로딩 ---------- */
+  function clearLoadTimers() {
+    clearTimeout(S.loadTimer); S.loadTimer = null;
+    clearTimeout(S.graceTimer); S.graceTimer = null;
+    clearTimeout(S.skipTimer); S.skipTimer = null;
+  }
+
+  function loadCurrentStop() {
+    clearLoadTimers();
+    S.req = null; S.exploring = false; S.deviated = false; S.loadError = "";
+    const st = station();
+    if (!st) { S.load = "nostation"; renderAll(); return; }
+    if (!st.stops.length) { S.load = "nostops"; hidePano(); renderAll(); handleTourFailure(); return; }
+    const sp = curStop();
+    if (!sp.panoId) { S.load = "nodata"; hidePano(); renderAll(); handleTourFailure(); return; }
+    if (S.sdk !== "ready") { S.load = "idle"; renderAll(); return; }
+    requestPano(sp, false);
+  }
+
+  function requestPano(sp, fresh) {
+    clearLoadTimers();
+    const token = ++S.loadSeq;
+    S.req = { token, panoId: sp.panoId, settled: false };
+    S.load = "loading";
+    renderAll();
+    S.loadTimer = setTimeout(() => onLoadTimeout(token), num(cfg("tour.panoLoadTimeoutMs", 12000)) || 12000);
+    try {
+      if (!S.pano || fresh) {
+        createPano({ panoId: sp.panoId, pov: sp.pov });
+      } else {
+        S.pano.setVisible(true);
+        // 같은 파노라마 ID 안에서 시야만 바꾸는 지점: 다시 조회하지 않고 setPov 만 호출
+        if (S.loadedPanoId === sp.panoId && safe(() => S.pano.getPanoId()) === sp.panoId) {
+          S.pano.setPov(sp.pov);
+          markLoaded(token);
+          return;
+        }
+        S.pano.setPanoIdWithPov(sp.panoId, sp.pov);
+      }
+    } catch (err) {
+      console.error(err);
+      onLoadError(token, `API 호출 중 오류: ${err && err.message ? err.message : err}`);
+    }
+  }
+
+  function onPanoStatus(status) {
+    const r = S.req;
+    if (r && !r.settled) {
+      if (status === "ERROR") { onLoadError(r.token, "pano_status 이벤트가 ERROR 를 반환했습니다."); return; }
+      if (status === "OK") { markLoaded(r.token); }
+      return;
+    }
+    if (status === "ERROR") {
+      if (S.exploring) { S.setupMsg = "이 좌표 주변(반경 300m)에서 파노라마를 찾지 못했거나 조회에 실패했습니다."; renderSetup(); }
+      else setMessage("파노라마 조회에 실패했습니다.", "error");
+    }
+  }
+
+  function onPanoChanged() {
+    S.location = safe(() => S.pano.getLocation()) || S.location;
+    S.pov = safe(() => S.pano.getPov()) || S.pov;
+    const r = S.req;
+    if (r && !r.settled) {
+      // pano_status 보다 pano_changed 가 먼저 오는 경우를 대비: 짧게 기다린 뒤 ERROR 가 없으면 로딩 완료로 간주
+      if (!S.graceTimer) {
+        S.graceTimer = setTimeout(() => {
+          S.graceTimer = null;
+          if (S.req === r && !r.settled) markLoaded(r.token);
+        }, 400);
+      }
+      renderPanel();
+      return;
+    }
+    // 관람객이 화면 안에서 인접 파노라마로 이동했거나 설정 도우미에서 검색한 경우
+    updateDeviation();
+    if (S.exploring) {
+      const id = safe(() => S.pano.getPanoId());
+      S.setupMsg = id ? `찾은 파노라마: ${id}` : "파노라마를 표시했습니다.";
+    }
+    renderAll();
+  }
+
+  let povRaf = 0;
+  function onPovChanged() {
+    cancelAnimationFrame(povRaf);
+    povRaf = requestAnimationFrame(() => {
+      S.pov = safe(() => S.pano.getPov()) || S.pov;
+      renderPovOnly();
+    });
+  }
+
+  function markLoaded(token) {
+    const r = S.req;
+    if (!r || r.token !== token) return;
+    r.settled = true; S.req = null;
+    clearLoadTimers();
+    S.load = "loaded"; S.loadedPanoId = r.panoId; S.loadError = "";
+    S.location = safe(() => S.pano.getLocation()) || S.location;
+    S.pov = safe(() => S.pano.getPov()) || S.pov;
+    S.deviated = false; // 이탈 여부는 이후 pano_changed 에서 판단
+    renderAll();
+    if (S.auto.playing) startDwell(S.auto.remaining !== null ? S.auto.remaining : curStop().dwellMs);
+  }
+
+  function onLoadError(token, reason) {
+    const r = S.req;
+    if (!r || r.token !== token) return;
+    r.settled = true; S.req = null;
+    clearLoadTimers();
+    S.load = "error"; S.loadError = reason || ""; S.loadedPanoId = null;
+    renderAll();
+    handleTourFailure();
+  }
+
+  function onLoadTimeout(token) {
+    const r = S.req;
+    if (!r || r.token !== token || r.settled) return;
+    // 요청은 유지 — 늦게 완료 신호가 오면 그대로 표시
+    S.load = "timeout";
+    renderAll();
+    handleTourFailure();
+  }
+
+  function handleTourFailure() {
+    if (!S.auto.playing) return;
+    clearDwellTimer();
+    const n = stopList().length;
+    if (cfg("tour.onLoadFailureDuringTour", "pause") === "skip" && S.stopIdx < n - 1) {
+      const d = num(cfg("tour.skipDelayMs", 3000)) || 3000;
+      setMessage(`이 지점을 표시하지 못해 ${Math.round(d / 1000)}초 뒤 다음 지점으로 넘어갑니다.`, "warn");
+      clearTimeout(S.skipTimer);
+      S.skipTimer = setTimeout(() => { S.skipTimer = null; if (S.auto.playing) goToStop(S.stopIdx + 1); }, d);
+    } else {
+      pauseAuto("이 지점을 표시하지 못해 자동 탐색을 일시정지했습니다.", "warn");
+    }
+  }
+
+  function updateDeviation() {
+    const sp = curStop();
+    const cur = currentPanoId();
+    const was = S.deviated;
+    S.deviated = !!(S.pano && sp && sp.panoId && cur && cur !== sp.panoId);
+    if (S.deviated && !was && S.auto.playing) pauseAuto("지정 지점 밖으로 이동해 자동 탐색을 일시정지했습니다.");
+  }
+
+  function currentPanoId() {
+    return (S.pano && safe(() => S.pano.getPanoId())) || (S.location && S.location.panoId) || null;
+  }
+
+  function retryStop() {
+    const sp = curStop();
+    if (!sp || !sp.panoId || S.sdk !== "ready") return;
+    setMessage("다시 불러오는 중입니다.");
+    requestPano(sp, true); // 새 인스턴스로 다시 생성
+  }
+
+  /* ---------- 지점 이동·자동 탐색 ---------- */
+  function goToStop(i) {
+    const n = stopList().length;
+    clearDwellTimer();
+    S.auto.remaining = null; S.auto.finished = false;
+    if (n) S.stopIdx = Math.max(0, Math.min(n - 1, i));
+    loadCurrentStop();
+  }
+  const nextStop = () => { if (S.stopIdx < stopList().length - 1) goToStop(S.stopIdx + 1); };
+  const prevStop = () => { if (S.stopIdx > 0) goToStop(S.stopIdx - 1); };
+  const firstStop = () => goToStop(0);
+
+  function startAuto() {
+    const n = stopList().length;
+    if (!n) { setMessage("탐색할 촬영 지점이 없습니다 (자료 미등록).", "warn"); return; }
+    if (S.sdk !== "ready") { setMessage("파노라마 API가 준비되지 않아 자동 탐색을 시작할 수 없습니다.", "warn"); return; }
+    if (S.auto.playing) return;
+    S.auto.playing = true;
+    const atLast = S.stopIdx === n - 1;
+    if (S.auto.finished || (atLast && S.load === "loaded" && S.auto.remaining === null)) {
+      setMessage("첫 지점부터 자동 탐색을 시작합니다.");
+      goToStop(0);
+      return;
+    }
+    if (S.deviated || S.exploring) { setMessage("지정 지점으로 돌아가 자동 탐색을 시작합니다."); goToStop(S.stopIdx); return; }
+    if (S.load === "loaded") {
+      setMessage("");
+      startDwell(S.auto.remaining !== null ? S.auto.remaining : curStop().dwellMs);
+    } else if (S.load === "error" || S.load === "timeout" || S.load === "nodata") {
+      if (!atLast) goToStop(S.stopIdx + 1);
+      else { S.auto.playing = false; setMessage("마지막 지점을 표시할 수 없어 자동 탐색을 시작하지 않았습니다.", "warn"); }
+    } else {
+      setMessage("지점이 로딩되면 표시 시간을 계산합니다.");
+    }
+    renderControls();
+  }
+
+  function pauseAuto(msg, tone) {
+    if (!S.auto.playing) return;
+    S.auto.playing = false;
+    if (S.auto.timer) {
+      const elapsed = performance.now() - S.auto.startedAt;
+      S.auto.remaining = Math.max(0, S.auto.runMs - elapsed);
+    }
+    clearDwellTimer();
+    clearTimeout(S.skipTimer); S.skipTimer = null;
+    setMessage(msg || "자동 탐색을 일시정지했습니다.", tone || "");
+    renderProgress();
+  }
+
+  function stopAutoHard() {
+    S.auto.playing = false;
+    clearDwellTimer();
+    S.auto.remaining = null; S.auto.finished = false;
+    clearTimeout(S.skipTimer); S.skipTimer = null;
+    renderProgress();
+  }
+
+  function clearDwellTimer() {
+    clearTimeout(S.auto.timer); S.auto.timer = null;
+    cancelAnimationFrame(S.auto.raf); S.auto.raf = 0;
+  }
+
+  // 머무는 시간: 지점 로딩 완료 신호를 받은 시점부터 계산
+  function startDwell(ms) {
+    clearDwellTimer();
+    const total = curStop().dwellMs;
+    ms = Math.max(0, Math.min(ms, total));
+    S.auto.stopTotal = total; S.auto.runMs = ms; S.auto.startedAt = performance.now();
+    S.auto.timer = setTimeout(onDwellEnd, ms);
+    const tick = () => { renderProgress(); if (S.auto.timer) S.auto.raf = requestAnimationFrame(tick); };
+    tick();
+    renderControls();
+  }
+
+  function onDwellEnd() {
+    S.auto.timer = null; S.auto.remaining = null;
+    cancelAnimationFrame(S.auto.raf);
+    const n = stopList().length;
+    if (S.stopIdx < n - 1) { goToStop(S.stopIdx + 1); return; }
+    S.auto.playing = false; S.auto.finished = true;
+    setMessage("마지막 지점입니다. 자동 탐색을 마쳤습니다.");
+    renderProgress();
+  }
+
+  function selectStation(idx) {
+    if (!stations[idx]) return;
+    const changed = idx !== S.stationIdx;
+    stopAutoHard(); clearLoadTimers(); S.req = null;
+    S.stationIdx = idx; S.stopIdx = 0;
+    document.body.dataset.accent = stations[idx].color;
+    setMessage(changed ? `${stations[idx].label}(으)로 전환했습니다. 자동 탐색과 타이머를 초기화했습니다.` : "");
+    loadCurrentStop();
+  }
+
+  function resetView() {
+    const sp = curStop();
+    if (!sp || !sp.panoId || !S.pano || S.sdk !== "ready") return;
+    if (S.deviated || S.exploring || S.load !== "loaded") { goToStop(S.stopIdx); return; }
+    S.pano.setPov(sp.pov);
+    setMessage("이 지점의 기본 시야로 되돌렸습니다.");
+  }
+
+  // 관람객이 직접 둘러보기 시작하면 자동 탐색 일시정지 (DOM 입력만 감지 — 코드에 의한 시야 변경과 구분)
+  ["pointerdown", "wheel", "touchstart", "keydown"].forEach((type) => {
+    $("pano").addEventListener(type, () => {
+      if (cfg("tour.pauseOnUserInteraction", true) && S.auto.playing) {
+        pauseAuto("직접 둘러보기를 시작해 자동 탐색을 일시정지했습니다. ‘자동 탐색 시작’을 누르면 이어서 진행합니다.");
+      }
+    }, { capture: true, passive: true });
+  });
+
+  /* ---------- 설정 도우미 ---------- */
+  function setupSearch() {
+    const lat = num($("setupLat").value), lng = num($("setupLng").value);
+    if (lat === null || lng === null || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      S.setupMsg = "위도와 경도를 숫자로 입력하세요."; renderSetup(); return;
+    }
+    if (S.sdk !== "ready") { S.setupMsg = "네이버 지도 API가 준비되지 않았습니다."; renderSetup(); return; }
+    stopAutoHard(); clearLoadTimers(); S.req = null;
+    S.exploring = true; S.snippet = "";
+    const pos = new naver.maps.LatLng(lat, lng);
+    try {
+      if (!S.pano) createPano({ position: pos, pov: { pan: defPov.pan, tilt: defPov.tilt, fov: defPov.fov } });
+      else { S.pano.setVisible(true); S.pano.setPosition(pos); }
+      S.setupMsg = "가장 가까운 파노라마(반경 300m)를 조회하는 중입니다…";
+    } catch (e) {
+      S.setupMsg = `조회 중 오류: ${e.message}`;
+    }
+    renderAll();
+  }
+
+  function makeSnippet() {
+    if (!S.pano) { S.setupMsg = "먼저 파노라마를 표시하세요."; renderSetup(); return; }
+    const id = safe(() => S.pano.getPanoId());
+    const pov = safe(() => S.pano.getPov()) || {};
+    const loc = safe(() => S.pano.getLocation()) || {};
+    const r1 = (v, d) => { const n = num(v); return n === null ? d : Math.round(n * 10) / 10; };
+    const comment = [loc.photodate && `촬영일 ${loc.photodate}`, loc.address && `주소 ${loc.address}`]
+      .filter(Boolean).join(" · ").replace(/[\r\n]+/g, " ");
+    S.snippet =
+      "{\n" +
+      `  panoId: ${JSON.stringify(id || null)},${comment ? "  // " + comment : ""}\n` +
+      `  pov: { pan: ${r1(pov.pan, 0)}, tilt: ${r1(pov.tilt, 0)}, fov: ${r1(pov.fov, 90)} },\n` +
+      "  title: null,\n" +
+      "  description: null,\n" +
+      `  dwellMs: ${defaultDwell}\n` +
+      "},";
+    S.setupMsg = id ? "아래 코드를 STATIONS 의 stops 배열에 붙여 넣고 title·description 을 채우세요." : "파노라마 ID를 읽지 못했습니다.";
+    renderSetup();
+  }
+
+  async function copySnippet() {
+    const ta = $("setupSnippet");
+    if (!ta || !ta.value) return;
+    try { await navigator.clipboard.writeText(ta.value); S.setupMsg = "클립보드에 복사했습니다."; }
+    catch (e) { ta.focus(); ta.select(); S.setupMsg = "자동 복사가 막혀 있습니다. 선택된 내용을 Ctrl+C 로 복사하세요."; }
+    renderSetupMsg();
+  }
+
+  /* ---------- 발표 모드 ---------- */
+  let idleTimer = 0;
+  function togglePresent(force) {
+    S.present = typeof force === "boolean" ? force : !S.present;
+    document.body.classList.toggle("is-present", S.present);
+    if (!S.present && document.fullscreenElement) safe(() => document.exitFullscreen());
+    pokeIdle();
+    renderAll();
+  }
+  function pokeIdle() {
+    document.body.classList.remove("ui-idle");
+    clearTimeout(idleTimer);
+    if (S.present) idleTimer = setTimeout(() => document.body.classList.add("ui-idle"), num(cfg("ui.presentationIdleHideMs", 2500)) || 2500);
+  }
+  document.addEventListener("mousemove", pokeIdle, { passive: true });
+  function toggleFullscreen() {
+    if (document.fullscreenElement) safe(() => document.exitFullscreen());
+    else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => setMessage("전체 화면을 사용할 수 없습니다.", "warn"));
+  }
+
+  /* ---------- 렌더링 ---------- */
+  function renderAll() {
+    renderHeader(); renderBadge(); renderOverlay(); renderControls(); renderPanel(); renderCaption(); renderFooter(); renderProgress();
+  }
+
+  function stationButtons(container, small) {
+    container.replaceChildren();
+    stations.forEach((st, i) => {
+      const d = dom(st);
+      const p = PALETTE[st.color];
+      const b = small
+        ? h("button", { class: "btn small", "aria-pressed": String(i === S.stationIdx), onclick: () => selectStation(i) }, st.key)
+        : h("button", { class: "station-btn", "aria-pressed": String(i === S.stationIdx), onclick: () => selectStation(i) },
+            h("span", { class: "sb-label", text: st.label }),
+            h("span", { class: "sb-dom", text: d ? d.short : "분류 미등록" }));
+      b.style.setProperty("--c", p.c); b.style.setProperty("--c-soft", p.soft);
+      if (small && i === S.stationIdx) { b.style.borderColor = p.c; b.style.color = p.c; }
+      container.append(b);
+    });
+  }
+
+  function renderHeader() {
+    stationButtons($("stationSwitch"), false);
+    stationButtons($("ptStations"), true);
+    const st = station(), d = dom(st);
+    $("stripKey").textContent = st ? st.label : "대여소";
+    $("stripName").replaceChildren(st && st.name ? st.name : miss("대여소명 미등록"));
+    $("stripId").textContent = st && st.id ? `ID ${st.id}` : "ID 미등록";
+    $("stripDom").textContent = d ? d.full : "분류 미등록";
+    $("stripRule").textContent = d ? `${d.rule} · 각 성별 이용량 분포 내 상대 위치 기준 (절대 이용자 수 비교 아님)` : "";
+    $("btnPanel").textContent = S.panelOpen ? "정보 패널 접기" : "정보 패널 펼치기";
+    $("btnPanel").setAttribute("aria-expanded", String(S.panelOpen));
+    $("layout").classList.toggle("panel-closed", !S.panelOpen);
+  }
+
+  function counterText() {
+    const n = stopList().length;
+    return n ? `${S.stopIdx + 1} / ${n}` : "– / 0";
+  }
+
+  function renderBadge() {
+    const sp = curStop();
+    $("stopCount").textContent = `지점 ${counterText()}`;
+    $("stopTitle").textContent = S.exploring ? "설정 도우미 탐색 중" : (sp && sp.title) || (sp ? "지점 제목 미등록" : "");
+    $("loadingChip").hidden = !(S.load === "loading" && S.sdk === "ready" && !S.exploring);
+    const dv = $("deviation");
+    dv.hidden = !(S.deviated && !S.exploring);
+    if (!dv.hidden) {
+      const cur = currentPanoId();
+      $("deviationText").textContent = `현재 화면은 지정한 지점 ${S.stopIdx + 1}이 아닌 인접 파노라마(${cur})입니다. 패널의 설명·지표는 지정 지점 기준입니다.`;
+    }
+  }
+
+  function overlayState() {
+    const origin = location.protocol === "file:" ? "file:// (로컬 파일로 열림)" : location.origin;
+    if (S.sdk === "auth_failed") return {
+      kind: "full", tone: "error", title: "네이버 지도 API 인증에 실패했습니다",
+      body: [
+        h("p", null, "NCP 콘솔의 Application 설정에서 다음을 확인하세요."),
+        h("p", null, "① ncpKeyId 에 Client ID 를 넣었는지 (Client Secret 아님)"),
+        h("p", null, "② Dynamic Map 이 선택되어 있는지"),
+        h("p", null, "③ Web 서비스 URL 에 현재 주소가 등록되어 있는지: ", h("code", { text: origin }))
+      ], actions: [{ label: "새로고침", fn: () => location.reload() }]
+    };
+    if (S.sdk === "no_key") return {
+      kind: "full", tone: "setup", title: "API 인증정보가 아직 설정되지 않았습니다",
+      body: [
+        h("p", null, "index.html 상단 ", h("code", { text: "APP_CONFIG.naver.ncpKeyId" }), " 에 NCP 콘솔 Maps Application 의 Client ID 를 넣으면 실제 네이버 거리뷰가 표시됩니다."),
+        h("p", null, "Client Secret 은 넣지 않습니다."),
+        location.protocol === "file:" ? h("p", null, "현재 파일을 직접 열었습니다. 인증을 위해 로컬 서버(예: http://localhost:8000)로 실행하세요.") : null,
+        h("p", null, "대여소 전환, 정보 패널, 발표 모드는 지금도 확인할 수 있습니다.")
+      ]
+    };
+    if (S.sdk === "loading" || S.sdk === "idle") return { kind: "full", tone: "info", title: "네이버 지도 API를 불러오는 중입니다", body: [h("p", null, "인터넷 연결이 필요합니다.")] };
+    if (S.sdk === "failed") return {
+      kind: "full", tone: "error", title: "네이버 지도 API를 불러오지 못했습니다",
+      body: [h("p", null, S.sdkError), h("p", null, "이 페이지는 네이버 지도 API와 인터넷 연결이 필요합니다.")],
+      actions: [{ label: "새로고침", fn: () => location.reload() }]
+    };
+    if (S.exploring) return null;
+    const st = station(), sp = curStop(), n = stopList().length;
+    const nav = [];
+    if (S.stopIdx > 0) nav.push({ label: "이전 지점", fn: prevStop });
+    if (n && S.stopIdx < n - 1) nav.push({ label: "다음 지점", fn: nextStop });
+    if (!st || S.load === "nostation") return { kind: "full", tone: "setup", title: "대여소 자료 미등록", body: [h("p", null, "index.html 의 STATIONS 에 대여소를 입력하세요.")] };
+    if (S.load === "nostops") return {
+      kind: "full", tone: "setup", title: "촬영 지점 자료 미등록",
+      body: [h("p", null, `${st.label}의 stops 배열이 비어 있습니다. 설정 도우미로 파노라마 ID를 확인한 뒤 입력하세요.`)]
+    };
+    if (S.load === "nodata") return {
+      kind: "full", tone: "setup", title: "자료 미등록",
+      body: [h("p", null, `${st.label} 지점 ${S.stopIdx + 1}의 파노라마 ID가 아직 입력되지 않았습니다.`)], actions: nav
+    };
+    if (S.load === "error") return {
+      kind: "card", tone: "error", title: "이 지점의 파노라마를 불러오지 못했습니다",
+      body: [
+        h("p", null, "파노라마 ID: ", h("code", { text: sp.panoId })),
+        h("p", null, "ID가 잘못되었거나 해당 파노라마가 더 이상 제공되지 않을 수 있습니다."),
+        S.loadError ? h("p", { class: "note", text: S.loadError }) : null
+      ],
+      actions: [{ label: "다시 시도", fn: retryStop, primary: true }].concat(nav)
+    };
+    if (S.load === "timeout") return {
+      kind: "card", tone: "warn", title: "파노라마 응답이 지연되고 있습니다",
+      body: [
+        h("p", null, `${Math.round((num(cfg("tour.panoLoadTimeoutMs", 12000)) || 12000) / 1000)}초 동안 로딩 완료 신호를 받지 못했습니다. 계속 기다리거나 다시 시도할 수 있습니다.`),
+        h("p", null, "파노라마 ID: ", h("code", { text: sp.panoId }))
+      ],
+      actions: [{ label: "다시 시도", fn: retryStop, primary: true }].concat(nav)
+    };
+    return null;
+  }
+
+  function renderOverlay() {
+    const o = overlayState();
+    const ov = $("overlay");
+    if (!o) { ov.hidden = true; return; }
+    ov.hidden = false;
+    ov.className = "overlay " + o.kind;
+    const card = $("overlayCard");
+    card.dataset.tone = o.tone || "info";
+    card.setAttribute("role", o.tone === "error" ? "alert" : "status");
+    $("ovTitle").textContent = o.title;
+    $("ovBody").replaceChildren(...(o.body || []).filter(Boolean));
+    $("ovActions").replaceChildren(...(o.actions || []).map((a) =>
+      h("button", { class: "btn" + (a.primary ? " primary" : ""), onclick: a.fn }, a.label)));
+  }
+
+  function renderControls() {
+    const n = stopList().length, ready = S.sdk === "ready";
+    $("btnFirst").disabled = !n || (S.stopIdx === 0 && !S.deviated && S.load === "loaded");
+    $("btnPrev").disabled = !n || S.stopIdx === 0;
+    $("btnNext").disabled = !n || S.stopIdx >= n - 1;
+    $("btnPlay").disabled = !n || !ready || S.auto.playing;
+    $("btnPause").disabled = !S.auto.playing;
+    $("btnView").disabled = !ready || !S.pano || !curStop() || !curStop().panoId;
+    $("ptPrev").disabled = $("btnPrev").disabled;
+    $("ptNext").disabled = $("btnNext").disabled;
+    $("ptPlay").disabled = !n || !ready;
+    $("ptPlay").textContent = S.auto.playing ? "일시정지" : "자동 탐색 시작";
+    $("ctrlCounter").textContent = counterText();
+    const msg = $("statusMsg");
+    let text = S.message, tone = S.tone;
+    if (!text) {
+      if (S.auto.playing && S.auto.timer) text = `자동 탐색 중 · 이 지점 표시 시간 ${Math.round(curStop().dwellMs / 1000)}초`;
+      else if (S.auto.playing) text = "자동 탐색 중 · 지점 로딩을 기다리는 중";
+      else if (S.load === "loaded") text = "마우스로 끌어 주변을 둘러볼 수 있습니다.";
+      else text = "";
+    }
+    msg.textContent = text; msg.dataset.tone = tone;
+  }
+
+  function renderProgress() {
+    const fill = $("dwellFill");
+    const a = S.auto;
+    let frac = 0;
+    if (a.timer && a.stopTotal) frac = (a.stopTotal - a.runMs + (performance.now() - a.startedAt)) / a.stopTotal;
+    else if (a.remaining !== null && curStop()) frac = 1 - a.remaining / curStop().dwellMs;
+    fill.style.width = `${Math.max(0, Math.min(1, frac)) * 100}%`;
+  }
+
+  function fmtCoord(c) {
+    if (!c) return null;
+    const lat = typeof c.lat === "function" ? safe(() => c.lat()) : c.y;
+    const lng = typeof c.lng === "function" ? safe(() => c.lng()) : c.x;
+    return num(lat) !== null && num(lng) !== null ? `${num(lat).toFixed(6)}, ${num(lng).toFixed(6)}` : null;
+  }
+  function fmtPov(p) {
+    if (!p) return null;
+    const f = (v) => (num(v) === null ? "–" : (Math.round(num(v) * 10) / 10).toString());
+    return `pan ${f(p.pan)} · tilt ${f(p.tilt)} · fov ${f(p.fov)}`;
+  }
+
+  function renderPanel() {
+    const st = station(), sp = curStop(), d = dom(st);
+
+    /* 현재 지점 */
+    fill("bodyStop", 
+      sp ? h("h3", null, `지점 ${S.stopIdx + 1}. `, sp.title || miss("제목 미등록")) : h("p", null, miss("촬영 지점 미등록")),
+      sp ? h("p", null, sp.description || miss("설명 미등록")) : null,
+      sp ? kv([
+        ["촬영일", (() => { const li = locInfo(); return li.showLoc ? val(li.loc.photodate) : miss(li.waitLabel); })()],
+        ["표시 시간", `${Math.round(sp.dwellMs / 100) / 10}초 (자동 탐색 시)`],
+        ["기본 시야", fmtPov(sp.pov)],
+        ["지정 파노라마", sp.panoId ? h("code", { text: sp.panoId }) : miss()]
+      ]) : null,
+      h("p", { class: "note", text: "지점 사이는 촬영 지점 단위로 전환됩니다. 연속 주행 영상이 아닙니다." })
+    );
+
+    /* 대여소 정보 */
+    fill("bodyStation", 
+      st ? kv([
+        ["대여소명", val(st.name)],
+        ["대여소 ID", val(st.id)],
+        ["분류", d ? d.full : miss()],
+        ["분류 기준", d ? d.rule : miss()],
+        ["Z점수 차", st.zScoreDiff !== null ? `${st.zScoreDiff} (남성 Z − 여성 Z)` : miss()],
+        ["자료 기준", val(st.researchPeriod || RESEARCH.dataPeriod)],
+        ["출처", val(st.source || RESEARCH.dataSource)]
+      ]) : h("p", null, miss()),
+      h("div", { class: "callout", text: "‘상대 우세’는 각 성별 이용량 분포 안에서 이 대여소가 차지하는 상대적 위치입니다. 남성 또는 여성 이용자가 절대적으로 더 많다는 뜻이 아닙니다." })
+    );
+
+    /* 환경지표 */
+    const metrics = st ? st.metrics : [];
+    const mBody = [h("div", { class: "callout", text: "아래 값은 각 지표의 측정 범위(예: 대여소 주변 버퍼) 기준의 대여소 단위 자료입니다. 지금 화면에 보이는 장면의 특성을 측정한 값이 아닙니다." })];
+    if (!metrics.length) mBody.push(h("p", null, miss("환경지표 자료 미등록")));
+    else {
+      const tb = h("tbody");
+      metrics.forEach((m) => {
+        const v = has(m.value) ? `${m.value}${has(m.unit) ? " " + m.unit : ""}` : null;
+        tb.append(h("tr", null,
+          h("td", null, has(m.name) ? String(m.name) : miss("이름 미등록")),
+          h("td", { class: "num" }, v || miss()),
+          h("td", null, has(m.scope) ? String(m.scope) : h("span", { class: "bad", text: "측정 범위 미등록" })),
+          h("td", null, has(m.source) ? String(m.source) : miss())));
+      });
+      mBody.push(h("table", { class: "data" }, h("thead", null, h("tr", null, h("th", { text: "지표" }), h("th", { text: "값" }), h("th", { text: "측정 범위" }), h("th", { text: "출처" }))), tb));
+    }
+    $("bodyMetrics").replaceChildren(...mBody);
+
+    /* VLM */
+    const v = st ? st.vlm : null;
+    const scaleMax = v && v.scaleMax !== null ? v.scaleMax : null;
+    const sameImage = !!(v && v.evaluatedPanoId && sp && sp.panoId && v.evaluatedPanoId === sp.panoId);
+    fill("bodyVlm", 
+      h("div", { class: "vlm-score" },
+        v && v.score !== null ? String(v.score) : miss("점수 미등록"),
+        h("small", { text: scaleMax !== null ? ` / ${scaleMax}` : "" })),
+      kv([
+        ["인간 평가자 평균", v && v.humanAuditorScore !== null ? `${v.humanAuditorScore}${scaleMax !== null ? " / " + scaleMax : ""}` : miss()],
+        ["평가 기준", val(v && v.rubric)],
+        ["평가 이미지", val(v && v.evaluatedImageReference)]
+      ]),
+      v && v.score !== null && v.humanAuditorScore !== null && v.score !== v.humanAuditorScore
+        ? h("p", { class: "note", text: `이 대여소는 VLM 점수(${v.score})와 인간 평가자 평균(${v.humanAuditorScore})이 다릅니다.` })
+        : null,
+      h("p", { class: "note", text: "VLM 설명문 (모델 출력)" }),
+      h("p", null, v && v.explanation ? v.explanation : miss("설명문 미등록")),
+      h("div", { class: "callout warn", text: sameImage
+        ? "VLM이 평가한 파노라마와 현재 지점의 파노라마 ID가 같습니다. 다만 평가 당시의 시야 방향·화각은 지금 화면과 다를 수 있습니다."
+        : "VLM이 평가한 이미지는 현재 표시 중인 네이버 파노라마와 다른 이미지입니다. 촬영 출처·시점·위치·시야가 다를 수 있으므로, 점수를 지금 화면에 대한 평가로 보지 마세요." }),
+      h("p", { class: "note", text: "VLM 점수는 모델이 이미지에 부여한 평가이며, 실제 이용자의 선호나 객관적인 안전 수준을 나타내지 않습니다." })
+    );
+
+    renderPanoInfo();
+
+    /* 집단 수준 결과 */
+    const g = RESEARCH.groupFindings || {};
+    const items = Array.isArray(g.items) ? g.items.filter((x) => x && typeof x === "object") : [];
+    const gBody = [h("div", { class: "callout", text: "전체 대여소를 두 집단으로 나눈 평균 비교입니다. 위의 개별 대여소가 이 경향을 그대로 따른다는 뜻은 아니며, 두 사례 대여소는 각 집단 전체를 대표하지 않습니다." })];
+    gBody.push(kv([["분석 개요", val(g.summary)], ["출처", val(g.source)]]));
+    if (!items.length) gBody.push(h("p", null, miss("집단 비교 결과 미등록")));
+    else {
+      const tb = h("tbody");
+      items.forEach((it) => {
+        const u = has(it.unit) ? " " + it.unit : "";
+        tb.append(h("tr", null,
+          h("td", null, has(it.name) ? String(it.name) : miss(), has(it.scope) ? h("div", { class: "note", text: it.scope }) : null),
+          h("td", { class: "num" }, has(it.maleRelative) ? `${it.maleRelative}${u}` : miss()),
+          h("td", { class: "num" }, has(it.femaleRelative) ? `${it.femaleRelative}${u}` : miss()),
+          h("td", null, [it.statistic, has(it.pValue) ? `p = ${it.pValue}` : null].filter(has).join(", ") || miss())));
+      });
+      gBody.push(h("table", { class: "data" }, h("thead", null, h("tr", null,
+        h("th", { text: "지표" }), h("th", { text: "남성 상대 우세 집단" }), h("th", { text: "여성 상대 우세 집단" }), h("th", { text: "검정" }))), tb));
+    }
+    $("bodyGroup").replaceChildren(...gBody);
+
+    /* 유의사항 */
+    $("bodyNotes").replaceChildren(h("ul", { class: "principles" },
+      h("li", { text: "두 대여소는 사례 비교이며, 각 집단 전체를 대표하지 않습니다." }),
+      h("li", { text: "집단 평균의 차이와 특정 대여소의 특성은 구분해서 보아야 합니다." }),
+      h("li", { text: "환경 특성과 성별 이용의 관계는 연관성이며, 인과관계를 뜻하지 않습니다." }),
+      h("li", { text: "어떤 거리가 특정 성별에게 더 적합하거나 선호된다는 뜻이 아닙니다." }),
+      h("li", { text: "VLM 점수는 모델의 이미지 평가이며, 이용자 선호나 객관적 안전 수준이 아닙니다." }),
+      h("li", { text: "거리뷰의 촬영 높이·위치는 자전거 이용자의 실제 시점과 다를 수 있습니다." }),
+      h("li", { text: "파노라마 촬영일과 연구자료 기준 시점이 다를 수 있습니다." })
+    ));
+
+    /* 출처 */
+    fill("bodySource", kv([
+      ["연구", RESEARCH.studyTitle ? `「${RESEARCH.studyTitle}」` : miss()],
+      ["연구진", val(RESEARCH.authors)],
+      ["이용자료 기간", val(RESEARCH.dataPeriod)],
+      ["이용자료 출처", val(RESEARCH.dataSource)],
+      ["대여소 자료", val(st && (st.researchPeriod || st.source) ? [st.researchPeriod, st.source].filter(Boolean).join(" · ") : null)],
+      ["거리뷰", "NAVER 지도 파노라마 (촬영일은 ‘파노라마 촬영 정보’ 참고)"]
+    ]), h("p", { class: "note", text: RESEARCH.classificationMethod || "" }));
+
+    renderSetup();
+  }
+
+  function locInfo() {
+    const loc = S.location;
+    const curId = currentPanoId();
+    const visibleState = S.exploring || (S.load !== "nodata" && S.load !== "nostops");
+    // getLocation() 이 아직 이전 파노라마 정보를 돌려주는 경우 표시하지 않음
+    const fresh = !!(loc && (!loc.panoId || !curId || loc.panoId === curId));
+    const showLoc = !!(S.pano && loc && S.sdk === "ready" && visibleState && fresh && S.load !== "error");
+    const waitLabel = S.load === "error" ? "불러오지 못함"
+      : (S.pano && loc && !fresh) || S.load === "loading" || S.load === "timeout" ? "갱신 중" : "파노라마 로드 후 표시";
+    return { loc, curId, showLoc, waitLabel };
+  }
+
+  function renderPanoInfo() {
+    const sp = curStop();
+    const { loc, curId, showLoc, waitLabel } = locInfo();
+    let match = miss("확인 전");
+    if (sp && sp.panoId && curId) match = curId === sp.panoId ? h("span", { class: "ok", text: "일치" }) : h("span", { class: "bad", text: "불일치 (다른 파노라마 표시 중)" });
+    $("bodyPano").replaceChildren(
+      kv([
+        ["촬영일", showLoc ? val(loc.photodate) : miss(waitLabel)],
+        ["도로명", showLoc ? val(loc.title) : miss("–")],
+        ["주소", showLoc ? val(loc.address) : miss("–")],
+        ["촬영 좌표", showLoc ? val(fmtCoord(loc.coord)) : miss("–")],
+        ["현재 ID", curId ? h("code", { text: curId }) : miss("–")],
+        ["지정 ID와", match],
+        ["현재 시야", h("span", { id: "povNow", text: fmtPov(S.pov) || "–" })]
+      ]),
+      h("p", { class: "note", text: "촬영일·주소는 getLocation() 이 반환한 네이버 파노라마 정보입니다. 연구자료 기준 시점과 다를 수 있습니다." })
+    );
+  }
+  function renderPovOnly() { const e = $("povNow"); if (e) e.textContent = fmtPov(S.pov) || "–"; }
+
+  // 설정 도우미: 입력칸은 한 번만 만들고, 상태 표시만 갱신 (입력 중 초기화 방지)
+  function buildSetup() {
+    const sec = $("secSetup");
+    if (!cfg("ui.showSetupTools", true)) { sec.hidden = true; return; }
+    $("bodySetup").replaceChildren(
+      h("div", { id: "setupStatus" }),
+      h("p", { class: "note", text: "NCP 콘솔 Application 의 Web 서비스 URL 에 위 주소를 등록해야 인증됩니다." }),
+      h("h3", { text: "설정 점검" }),
+      warnings.length ? h("ul", { class: "warn-list" }, warnings.map((w) => h("li", { text: w }))) : h("p", { class: "ok", text: "발견된 문제 없음" }),
+      h("h3", { text: "좌표로 파노라마 찾기" }),
+      h("p", { class: "note", text: "setPosition() 으로 반경 300m 안의 가장 가까운 파노라마를 표시합니다. 의도한 위치가 아닐 수 있으니 화면을 보고 확인한 뒤, 화면 안에서 이동·회전해 원하는 장면을 맞추세요." }),
+      h("div", { class: "setup-field" },
+        h("label", null, "위도", h("input", { id: "setupLat", inputmode: "decimal", placeholder: "37.xxxxxx" })),
+        h("label", null, "경도", h("input", { id: "setupLng", inputmode: "decimal", placeholder: "126.xxxxxx" }))),
+      h("div", { class: "setup-field" },
+        h("button", { class: "btn small", id: "btnSetupFill", onclick: () => {
+          const s = station();
+          if (s && s.coord.lat !== null && s.coord.lng !== null) { $("setupLat").value = s.coord.lat; $("setupLng").value = s.coord.lng; }
+          else { S.setupMsg = "이 대여소의 coord 가 입력되지 않았습니다."; renderSetupMsg(); }
+        } }, "선택한 대여소 좌표 넣기"),
+        h("button", { class: "btn small primary", id: "btnSetupSearch", onclick: setupSearch }, "찾기")),
+      h("h3", { text: "현재 화면을 지점 설정으로 만들기" }),
+      h("div", { class: "setup-field" },
+        h("button", { class: "btn small", id: "btnSnippet", onclick: makeSnippet }, "현재 파노라마 ID·시야 가져오기"),
+        h("button", { class: "btn small", id: "btnCopy", onclick: copySnippet }, "복사")),
+      h("textarea", { class: "snippet", id: "setupSnippet", readonly: true, "aria-label": "지점 설정 코드" }),
+      h("p", { class: "note", id: "setupMsg" })
+    );
+  }
+  function renderSetup() {
+    if (!$("setupStatus")) return;
+    const sdkText = { idle: "대기", no_key: "Client ID 미입력", loading: "로딩 중", ready: "준비됨", failed: "로딩 실패", auth_failed: "인증 실패" }[S.sdk];
+    const origin = location.protocol === "file:" ? "file:// — 로컬 서버로 실행하세요" : location.origin;
+    $("setupStatus").replaceChildren(kv([["API 상태", sdkText], ["현재 주소", h("code", { text: origin })]]));
+    $("setupSnippet").value = S.snippet;
+    renderSetupMsg();
+  }
+  function renderSetupMsg() { const e = $("setupMsg"); if (e) e.textContent = S.setupMsg || ""; }
+
+  function renderCaption() {
+    const st = station(), sp = curStop(), d = dom(st);
+    $("capMain").textContent = `${st ? st.label : "대여소"} · ${st && st.name ? st.name : MISSING} · ${d ? d.full : "분류 미등록"}`;
+    $("capNote").textContent = [sp && sp.title, st && st.shortNote].filter(Boolean).join(" — ") || "";
+    $("capCount").textContent = `지점 ${counterText()}`;
+    const photo = S.location && S.location.photodate ? `파노라마 촬영일 ${S.location.photodate}` : null;
+    $("capMeta").textContent = [
+      `거리뷰: NAVER 지도 파노라마${photo ? " (" + photo + ")" : ""}`,
+      `연구자료: ${[RESEARCH.dataSource, RESEARCH.dataPeriod].filter(Boolean).join(", ") || MISSING}`,
+      "촬영 지점 사이를 순서대로 전환한 화면이며 연속 주행 영상이 아닙니다",
+      cfg("ui.presentationRecordingNote", "")
+    ].filter(Boolean).join(" · ");
+  }
+
+  function renderFooter() {
+    $("footer").replaceChildren(
+      h("span", { text: `연구: 「${RESEARCH.studyTitle || MISSING}」` }),
+      h("span", { text: `이용자료: ${[RESEARCH.dataSource, RESEARCH.dataPeriod].filter(Boolean).join(", ") || MISSING}` }),
+      h("span", { text: "거리뷰: NAVER 지도 파노라마" }),
+      h("span", { text: "네이버 지도 API와 인터넷 연결이 필요한 페이지입니다" })
+    );
+  }
+
+  /* ---------- 이벤트 연결 ---------- */
+  $("btnFirst").addEventListener("click", firstStop);
+  $("btnPrev").addEventListener("click", prevStop);
+  $("btnNext").addEventListener("click", nextStop);
+  $("btnPlay").addEventListener("click", startAuto);
+  $("btnPause").addEventListener("click", () => pauseAuto("자동 탐색을 일시정지했습니다."));
+  $("btnView").addEventListener("click", resetView);
+  $("btnBackToStop").addEventListener("click", () => goToStop(S.stopIdx));
+  $("btnPanel").addEventListener("click", () => { S.panelOpen = !S.panelOpen; renderHeader(); });
+  $("btnPresent").addEventListener("click", () => togglePresent(true));
+  $("ptPrev").addEventListener("click", prevStop);
+  $("ptNext").addEventListener("click", nextStop);
+  $("ptPlay").addEventListener("click", () => (S.auto.playing ? pauseAuto("자동 탐색을 일시정지했습니다.") : startAuto()));
+  $("ptFull").addEventListener("click", toggleFullscreen);
+  $("ptExit").addEventListener("click", () => togglePresent(false));
+
+  document.addEventListener("keydown", (e) => {
+    const t = e.target;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (t && t.closest && t.closest("input, textarea, select, [contenteditable]")) return;
+    const inPano = !!(t && t.closest && t.closest("#pano"));
+    switch (e.key) {
+      case " ":
+        if (t && t.closest && t.closest("button")) return;
+        e.preventDefault();
+        S.auto.playing ? pauseAuto("자동 탐색을 일시정지했습니다.") : startAuto();
+        break;
+      case "PageDown": e.preventDefault(); nextStop(); break;
+      case "PageUp": e.preventDefault(); prevStop(); break;
+      case "ArrowRight": if (!inPano) { e.preventDefault(); nextStop(); } break;
+      case "ArrowLeft": if (!inPano) { e.preventDefault(); prevStop(); } break;
+      case "Home": if (!inPano) { e.preventDefault(); firstStop(); } break;
+      case "Escape": if (S.present && !document.fullscreenElement) togglePresent(false); break;
+      default: break;
+    }
+  });
+
+  /* ---------- 시작 ---------- */
+  if (stations[0]) document.body.dataset.accent = stations[0].color;
+  buildSetup();
+  if (cfg("ui.startInPresentationMode", false)) togglePresent(true);
+  loadCurrentStop();
+  loadSdk();
+})();
+</script>
+</body>
+</html>
